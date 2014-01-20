@@ -55,9 +55,10 @@ Integer = (
     hashcode    = ( ^self )
     
     "Iterating"
-    to: limit do: block = (
+    to: limit do: block = primitive
+    "to: limit do: block = (
         self to: limit by: 1 do: block
-    )
+    )"
     
     to: limit by: step do: block = (
         | i |
