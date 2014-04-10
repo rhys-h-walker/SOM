@@ -1,0 +1,11 @@
+GreaterThan = Benchmark (
+
+    benchmark = ( 
+        | sum |
+        sum := 0.
+        1 to: 1000 do: [:i |
+            i > 500 ifFalse: [sum := sum + 1]].
+
+        sum = 500 ifFalse: [ self error: 'Expected 500, got: ' + sum asString].
+    )    
+)
