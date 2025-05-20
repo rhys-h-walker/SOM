@@ -5,15 +5,15 @@ VectorBenchmark = Benchmark (
     benchmark = (
 
         "Create an Vector and append 1000 items to it"
-        | arr resultVec |
-        arr := Vector new.
-        1 to: 1000 do: [:i | arr append: i].
+        | vec resultVec |
+        vec := Vector new.
+        1 to: 1000 do: [:i | vec append: i].
 
-        "Iterate over and create a new result vector to store even number"
+        "Iterate over and copy to a new Vector"
         resultVec := Vector new.
-        1 to: 1000 do: [:i |
-            ((arr at: i) % 2) = 0 ifTrue: [
-                resultVec append: (arr at: i)
+        vec doIndexes: [:i |
+            (vec at: i) ~= 0 ifTrue: [
+                resultVec append: (vec at: i)
             ]
         ].
 
