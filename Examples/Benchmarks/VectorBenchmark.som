@@ -1,0 +1,26 @@
+"A benchmark for the Builtin Vector class"
+
+VectorBenchmark = Benchmark (
+
+    benchmark = (
+
+        "Create an Vector and append 1000 items to it"
+        | arr resultVec |
+        arr := Vector new.
+        1 to: 1000 do: [:i | arr append: i].
+
+        "Iterate over and create a new result vector to store even number"
+        resultVec := Vector new.
+        1 to: 1000 do: [:i |
+            ((arr at: i) % 2) = 0 ifTrue: [
+                resultVec append: (arr at: i)
+            ]
+        ].
+
+        ^resultVec
+    )
+
+    verifyResult: result = (
+        ^ self assert: 1000 equals: result last
+    )
+)
