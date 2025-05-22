@@ -32,11 +32,7 @@ Vector = (
     "Accessing"
     at: index = primitive
 
-    at: index put: value = (
-        | storeIdx |
-        storeIdx := index + first - 1.
-        ^ self checkIndex: storeIdx ifValid: [ storage at: storeIdx put: value ]
-    )
+    at: index put: value = primitive
 
     first = ( ^ (self size > 0) ifTrue: [storage at: first] ifFalse: [nil] )
     last  = ( ^ (self size > 0) ifTrue: [storage at: last - 1] ifFalse: [nil] )
