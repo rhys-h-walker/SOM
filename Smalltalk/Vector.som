@@ -30,11 +30,7 @@ Vector = (
     | first last storage |
 
     "Accessing"
-    at: index = (
-        | storeIdx |
-        storeIdx := index + first - 1.
-        ^ self checkIndex: storeIdx ifValid: [ storage at: storeIdx ]
-    )
+    at: index = primitive
 
     at: index put: value = (
         | storeIdx |
@@ -174,7 +170,7 @@ Vector = (
 
     "Allocation"
     new              = ( ^ self new: 50 )
-    new: initialSize = ( ^ super new initialize: initialSize )
+    new: initialSize = primitive
 
     with: elem = (
         | newVector |
