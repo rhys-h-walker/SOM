@@ -3,24 +3,22 @@
 VectorBenchmark = Benchmark (
 
     benchmark = (
+        | v |
 
-        "Create an Vector and append 1000 items to it"
-        | vec resultVec |
-        vec := Vector new.
-        1 to: 1000 do: [:i | vec append: i].
+       "Create a vector and add 1000 items to it"
+       v := Vector new.
+       1 to: 1000 do: [ :i | v , i].
 
-        "Iterate over and copy to a new Vector"
-        resultVec := Vector new.
-        vec doIndexes: [:i |
-            (vec at: i) ~= 0 ifTrue: [
-                resultVec append: (vec at: i)
-            ]
-        ].
+       "Remove 100 items from the middle"
+       450 to: 550 do: [:i | v remove: i].
 
-        ^resultVec
+       "Now change the terms located from 350 to 450"
+       350 to: 450 do: [:i | v at: i put: i+1].
+
+        ^v
     )
 
     verifyResult: result = (
-        ^ self assert: 1000 equals: result last
+        ^ self assert: 351 equals: (result at: 350)
     )
 )
