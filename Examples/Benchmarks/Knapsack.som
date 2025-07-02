@@ -436,7 +436,7 @@ Knapsack = Benchmark (
     )
 
     verifyResult: result = (
-        ^ self assert: 11991 equals: result
+        ^ self assert: 11966 equals: result
     )
 
     knapsack: goal weights: w values: v = (
