@@ -1,13 +1,16 @@
-import pytest
+"""
+Defines variables that are required for a report to be generated.
+"""
+
 import os
 
 # Report Generate Logic
-failedUnexpectedly = []
-passedUnexpectedly = []
-tests_passed = 0
-tests_failed = 0
-total_tests = 0
-tests_skipped = 0
+tests_failed_unexpectedly = []
+tests_passed_unexpectedly = []
+tests_passed = 0  # pylint: disable=invalid-name
+tests_failed = 0  # pylint: disable=invalid-name
+total_tests = 0  # pylint: disable=invalid-name
+tests_skipped = 0  # pylint: disable=invalid-name
 
 # Lists containing references to each exception test
 known_failures = []
@@ -23,9 +26,15 @@ GENERATE_REPORT_LOCATION = ""
 TEST_EXCEPTIONS = ""
 GENERATE_REPORT = False
 
+
 # Log data
 def pytest_runtest_logreport(report):
-    global total_tests, tests_passed, tests_failed, tests_skipped
+    """
+    Increment the counters for what action was performed
+    """
+    # Global required here to access counters
+    # Not ideal but without the counters wouldn't work
+    global total_tests, tests_passed, tests_failed, tests_skipped  # pylint: disable=global-statement
     if report.when == "call":  # only count test function execution, not setup/teardown
         total_tests += 1
         if report.passed:
@@ -35,11 +44,17 @@ def pytest_runtest_logreport(report):
         elif report.skipped:
             tests_skipped += 1
 
+
 # Run after all tests completed, Generate a report of failing and passing tests
-def pytest_sessionfinish(session, exitstatus):
+def pytest_sessionfinish():
+    """
+    Generate report based on test run
+    """
     print("Running this method")
     if GENERATE_REPORT:
         os.makedirs(GENERATE_REPORT_LOCATION, exist_ok=True)
+
+        # Generate a report_message to save
         report_message = f"""
 Pytest Completed with {tests_passed}/{total_tests} passing:
 
@@ -49,10 +64,10 @@ Tests_failed: {tests_failed}
 Tests_skipped: {tests_skipped}
 
 Tests that passed unexpectedly:
-{'\n'.join(f"{test}" for test in passedUnexpectedly)}
+{'\n'.join(f"{test}" for test in tests_passed_unexpectedly)}
 
 Tests that failed unexpectedly:
-{'\n'.join(f"{test}" for test in failedUnexpectedly)}
+{'\n'.join(f"{test}" for test in tests_failed_unexpectedly)}
 
 ## ENVIRONMENT VARIABLES USED ##
 
@@ -77,6 +92,6 @@ Do_not_run:
 {'\n'.join(f"{test}" for test in do_not_run)}
 """
         print(f"Report location {GENERATE_REPORT_LOCATION}/report.txt")
-        with open(f"{GENERATE_REPORT_LOCATION}/report.txt", "w") as f:
+        with open(f"{GENERATE_REPORT_LOCATION}/report.txt", "w", encoding="utf-8") as f:
             f.write(report_message)
             f.close()

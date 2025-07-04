@@ -1,46 +1,52 @@
+"""
+This is the SOM integration test runner file. Pytest automatically discovers
+this file and will find all .som test files in the below directories.
+"""
+
 import subprocess
 from pathlib import Path
 import os
 import sys
 import pytest
 import yaml
-import conftest as vars
+import conftest as external_vars
+
 
 def debug(message):
     """
     Take a string as a mesasage and output if DEBUG is true
     """
-    if vars.DEBUG is True:
+    if external_vars.DEBUG is True:
         print(message)
 
 
-def debugList(messageList, prefix="", postfix=""):
+def debug_list(message_list, prefix="", postfix=""):
     """
     Take a list of messages and output if DEBUG is true, with a prefix and a postfix
     """
-    if vars.DEBUG is True:
-        for message in messageList:
+    if external_vars.DEBUG is True:
+        for message in message_list:
             print(prefix + str(message) + postfix)
 
 
-def locateTests(path, testFiles):
+def locate_tests(path, test_files):
     """
     Locate all test files that exist in the given directory
     Ignore any tests which are in the ignoredTests directory
     Return a list of paths to the test files
     """
     # To ID a file will be opened and at the top there should be a comment which starts with VM:
-    for file in Path(path).glob("*.som"):
+    for file_path in Path(path).glob("*.som"):
         # Check if the file is in the ignored tests (Check via path, multiple tests named test.som)
-        with open(file, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             contents = f.read()
             if "VM" in contents:
-                testFiles.append(file)
+                test_files.append(file_path)
 
-    return testFiles
+    return test_files
 
 
-def readDirectory(path, testFiles):
+def read_directory(path, test_files):
     """
     Recursively read all sub directories
     Path is the directory we are currently in
@@ -48,176 +54,187 @@ def readDirectory(path, testFiles):
     """
     for directory in Path(path).iterdir():
         if directory.is_dir():
-            readDirectory(directory, testFiles)
+            read_directory(directory, test_files)
         else:
             continue
 
-    locateTests(path, testFiles)
+    locate_tests(path, test_files)
 
 
-def assembleTestDictionary(testFiles):
+def assemble_test_dictionary(test_files):
     """
     Assemble a dictionary of
     name: the name of the test file
     stdout/stderr: the expected output of the test
     """
     tests = []
-    for file in testFiles:
-        testDict = parseTestFile(file)
-        if testDict is None:
+    for file_path in test_files:
+        test_dict = parse_test_file(file_path)
+        if test_dict is None:
             continue
-        tests.append(testDict)
+        tests.append(test_dict)
 
     return tests
 
 
-def parseTestFile(testFile):
+def parse_test_file(test_file):
     """
     parse the test file to extract the important information
     """
-    testDict = {"name": testFile, "stdout": [], "stderr": [], "customCP": "NaN"}
-    with open(testFile, "r") as f:
-        contents = f.read()
+    test_info_dict = {"name": test_file, "stdout": [], "stderr": [], "customCP": "NaN"}
+    with open(test_file, "r", encoding="utf-8") as open_file:
+        contents = open_file.read()
         comment = contents.split('"')[1]
 
         # Make sure if using a custom test classpath that it is above
         # Stdout and Stderr
-        if "customCP" in comment:
-            commentLines = comment.split("\n")
-            for line in commentLines:
-                if "customCP" in line:
-                    testDict["customCP"] = line.split("customCP:")[1].strip()
+        if "custom_classpath" in comment:
+            comment_lines = comment.split("\n")
+            for line in comment_lines:
+                if "custom_classpath" in line:
+                    test_info_dict["customCP"] = line.split("custom_classpath:")[1].strip()
                     continue
 
         if "stdout" in comment:
-            stdOut = comment.split("stdout:")[1]
-            if "stderr" in stdOut:
-                stdErrInx = stdOut.index("stderr:")
-                stdOut = stdOut[:stdErrInx]
-            stdOut = stdOut.replace("...", "")
-            stdOutL = stdOut.split("\n")
-            stdOutL = [line.strip() for line in stdOutL if line.strip()]
-            testDict["stdout"] = stdOutL
+            std_out = comment.split("stdout:")[1]
+            if "stderr" in std_out:
+                std_err_inx = std_out.index("stderr:")
+                std_out = std_out[:std_err_inx]
+            std_out = std_out.replace("...", "")
+            std_err_l = std_out.split("\n")
+            std_err_l = [line.strip() for line in std_err_l if line.strip()]
+            test_info_dict["stdout"] = std_err_l
 
         if "stderr" in comment:
-            stdErr = comment.split("stderr:")[1]
-            if "stdout" in stdErr:
-                stdOutInx = stdErr.index("stdout:")
-                stdErr = stdErr[:stdOutInx]
-            stdErr = stdErr.replace("...", "")
-            stdErrL = stdErr.split("\n")
-            stdErrL = [line.strip() for line in stdErrL if line.strip()]
-            testDict["stderr"] = stdErrL
+            std_err = comment.split("stderr:")[1]
+            if "stdout" in std_err:
+                std_out_inx = std_err.index("stdout:")
+                std_err = std_err[:std_out_inx]
+            std_err = std_err.replace("...", "")
+            std_err_l = std_err.split("\n")
+            std_err_l = [line.strip() for line in std_err_l if line.strip()]
+            test_info_dict["stderr"] = std_err_l
 
-        testTuple = (
-            testDict["name"],
-            testDict["stdout"],
-            testDict["stderr"],
-            testDict["customCP"],
+        test_tuple = (
+            test_info_dict["name"],
+            test_info_dict["stdout"],
+            test_info_dict["stderr"],
+            test_info_dict["customCP"],
         )
 
-    return testTuple
+    return test_tuple
 
 
-def checkOut(result, expstd, experr, errorMessage):
+def check_out(test_outputs, expected_std_out, expected_std_err):
     """
     check if the output of the test matches the expected output
     result: The object returned by subprocess.run
     expstd: The expected standard output
     experr: The expected standard error output
-    errorMessage: The pregenerated error message to be used in case of failure
     Returns: Boolean indicating if result matches expected output
+
+    note: This method does not directly error, just checks conditions
     """
 
     # Tests borrowed from lang_tests and stderr and atdout will not directly match that of all SOMs
     # Order of the output is important
 
-    stdout = result.stdout.splitlines()
-    stderr = result.stderr.splitlines()
+    std_out = test_outputs.stdout.splitlines()
+    std_err = test_outputs.stderr.splitlines()
 
     # Check if each line in stdout and stderr is in the expected output
-    for line in expstd:
-        if not any(line in out_line for out_line in stdout):
+    for line in expected_std_out:
+        if not any(line in out_line for out_line in std_out):
             return False
-        if line in stdout:
-            stdout.remove(line)
-        if line in stderr:
-            stderr.remove(line)
+        if line in std_out:
+            std_out.remove(line)
+        if line in std_err:
+            std_err.remove(line)
 
-    for line in experr:
-        if not any(line in err_line for err_line in stderr):
+    for line in expected_std_err:
+        if not any(line in err_line for err_line in std_err):
             return False
-        if line in stdout:
-            stdout.remove(line)
-        if line in stderr:
-            stderr.remove(line)
+        if line in std_out:
+            std_out.remove(line)
+        if line in std_err:
+            std_err.remove(line)
 
     # If we made it this far then the test passed
     return True
+
 
 # Code below here runs before pytest finds it's methods
 
 location = os.path.relpath(os.path.dirname(__file__) + "/Tests")
 
 # Work out settings for the application (They are labelled REQUIRED or OPTIONAL)
-if "DEBUG" in os.environ: # OPTIONAL
-    vars.DEBUG = os.environ["DEBUG"].lower() == "true"
+if "DEBUG" in os.environ:  # OPTIONAL
+    external_vars.DEBUG = os.environ["DEBUG"].lower() == "true"
 
-if "CLASSPATH" not in os.environ: # REQUIRED
+if "CLASSPATH" not in os.environ:  # REQUIRED
     sys.exit("Please set the CLASSPATH environment variable")
 
-if "EXECUTABLE" not in os.environ: # REQUIRED
+if "EXECUTABLE" not in os.environ:  # REQUIRED
     sys.exit("Please set the EXECUTABLE environment variable")
 
-if "TEST_EXCEPTIONS" in os.environ: # OPTIONAL
-    vars.TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
+if "TEST_EXCEPTIONS" in os.environ:  # OPTIONAL
+    external_vars.TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
 
-vars.GENERATE_REPORT = False
-if "GENERATE_REPORT" in os.environ: # OPTIONAL
+if "GENERATE_REPORT" in os.environ:  # OPTIONAL
     # Value is the location
     # Its prescense in env variables signifies intent to save
-    vars.GENERATE_REPORT_LOCATION = os.environ["GENERATE_REPORT"]
-    vars.GENERATE_REPORT = True
+    external_vars.GENERATE_REPORT_LOCATION = os.environ["GENERATE_REPORT"]
+    external_vars.GENERATE_REPORT = True
 
-vars.CLASSPATH = os.environ["CLASSPATH"]
-vars.EXECUTABLE = os.environ["EXECUTABLE"]
+external_vars.CLASSPATH = os.environ["CLASSPATH"]
+external_vars.EXECUTABLE = os.environ["EXECUTABLE"]
 
 debug(
     f"""
 \n\nWelcome to SOM Integration Testing
-\nDEBUG is set to: {vars.DEBUG}
-CLASSPATH is set to: {vars.CLASSPATH}
-EXECUTABLE is set to: {vars.EXECUTABLE}
-TEST_EXCEPTIONS is set to: {vars.TEST_EXCEPTIONS}
-GENERATE_REPORT is set to: {vars.GENERATE_REPORT}
-GENERATE_REPORT_LOCATION is set to: {vars.GENERATE_REPORT_LOCATION}
+\nDEBUG is set to: {external_vars.DEBUG}
+CLASSPATH is set to: {external_vars.CLASSPATH}
+EXECUTABLE is set to: {external_vars.EXECUTABLE}
+TEST_EXCEPTIONS is set to: {external_vars.TEST_EXCEPTIONS}
+GENERATE_REPORT is set to: {external_vars.GENERATE_REPORT}
+GENERATE_REPORT_LOCATION is set to: {external_vars.GENERATE_REPORT_LOCATION}
 """
 )
 
-debug(f"Opening test_tags")
-if vars.TEST_EXCEPTIONS:
-    with open(f"{vars.TEST_EXCEPTIONS}", "r") as f:
-        yamlFile = yaml.safe_load(f)
-        vars.known_failures = (yamlFile["known_failures"])
-        vars.failing_as_unspecified = (yamlFile["failing_as_unspecified"])
-        vars.unsupported = (yamlFile["unsupported"])
-        vars.do_not_run = yamlFile["do_not_run"] # Tests here do not fail at a SOM level but at a python level (e.g. Invalud UTF-8 characters)
+debug("Opening test_tags")
+if external_vars.TEST_EXCEPTIONS:
+    with open(f"{external_vars.TEST_EXCEPTIONS}", "r", encoding="utf-8") as file:
+        yamlFile = yaml.safe_load(file)
+        external_vars.known_failures = yamlFile["known_failures"]
+        external_vars.failing_as_unspecified = yamlFile["failing_as_unspecified"]
+        external_vars.unsupported = yamlFile["unsupported"]
+        # Tests here do not fail at a SOM level but at a python level
+        external_vars.do_not_run = yamlFile["do_not_run"]
 
-debugList(vars.known_failures, prefix="Failure expected from: ")
-debugList(vars.failing_as_unspecified, prefix="Failure expected through undefined behaviour: ")
-debugList(vars.unsupported, prefix="Test that fails through unsupported bahaviour: ")
-debugList(vars.do_not_run, prefix="Test that will not run through python breaking logic: ")
+debug_list(external_vars.known_failures, prefix="Failure expected from: ")
+debug_list(
+    external_vars.failing_as_unspecified,
+    prefix="Failure expected through undefined behaviour: ",
+)
+debug_list(
+    external_vars.unsupported, prefix="Test that fails through unsupported bahaviour: "
+)
+debug_list(
+    external_vars.do_not_run,
+    prefix="Test that will not run through python breaking logic: ",
+)
 
 testFiles = []
-readDirectory(location, testFiles)
-TESTS_LIST = assembleTestDictionary(testFiles)
+read_directory(location, testFiles)
+TESTS_LIST = assemble_test_dictionary(testFiles)
+
 
 @pytest.mark.parametrize(
-    "name,stdout,stderr,customCP",
+    "name,stdout,stderr,custom_classpath",
     TESTS_LIST,
     ids=[str(test_args[0]) for test_args in TESTS_LIST],
 )
-def tests_runner(name, stdout, stderr, customCP):
+def tests_runner(name, stdout, stderr, custom_classpath):
     """
     Take an array of dictionaries with test file names and expected output
     Run all of the tests and check the output
@@ -225,22 +242,24 @@ def tests_runner(name, stdout, stderr, customCP):
     """
 
     # Check if a test shoudld not be ran
-    if (str(name) in vars.do_not_run):
+    if str(name) in external_vars.do_not_run:
         debug(f"Not running test {name}")
         pytest.skip("Test included in do_not_run")
 
-    if customCP != "NaN":
-        debug(f"Using custom classpath: {customCP}")
-        command = f"{vars.EXECUTABLE} -cp {customCP} {name}"
+    if custom_classpath != "NaN":
+        debug(f"Using custom classpath: {custom_classpath}")
+        command = f"{external_vars.EXECUTABLE} -cp {custom_classpath} {name}"
     else:
-        command = f"{vars.EXECUTABLE} -cp {vars.CLASSPATH} {name}"
+        command = f"{external_vars.EXECUTABLE} -cp {external_vars.CLASSPATH} {name}"
 
     debug(f"Running test: {name}")
 
-    result = subprocess.run(command, capture_output=True, text=True, shell=True)
+    result = subprocess.run(
+        command, capture_output=True, text=True, shell=True, check=False
+    )
 
     # Produce potential error messages now and then run assertion
-    errMsg = f"""
+    error_message = f"""
 Test failed for: {name}
 Expected stdout: {stdout}
 Given stdout   : {result.stdout}
@@ -250,31 +269,48 @@ Command used   : {command}
 """
 
     if result.returncode != 0:
-        errMsg += f"Command failed with return code: {result.returncode}\n"
+        error_message += f"Command failed with return code: {result.returncode}\n"
 
-    # SOM level errors will be raised in stdout only SOM++ errors are in stderr (Most tests are for SOM level errors)
-    testPassed = checkOut(result, stdout, stderr, errMsg)
+    test_pass_bool = check_out(result, stdout, stderr)
 
     # Check if we have any unexpectedly passing tests
-    if (str(name) in vars.known_failures and testPassed): # Test passed when it is not expected tp
-        vars.passedUnexpectedly.append(name)
-        assert(False), f"Test {name} is in known_failures but passed"
-    elif (str(name) in vars.known_failures and testPassed is False): # Test failed as expected
-        assert(True)
+    if (
+        str(name) in external_vars.known_failures and test_pass_bool
+    ):  # Test passed when it is not expected tp
+        external_vars.tests_passed_unexpectedly.append(name)
+        assert False, f"Test {name} is in known_failures but passed"
+    elif (
+        str(name) in external_vars.known_failures and test_pass_bool is False
+    ):  # Test failed as expected
+        assert True
 
-    if (str(name) in vars.failing_as_unspecified and testPassed): # Test passed when it is not expected tp
-        vars.passedUnexpectedly.append(name)
-        assert(False), f"Test {name} is in failing_as_unspecified but passed"
-    elif (str(name) in vars.failing_as_unspecified and testPassed is False): # Test failed as expected
-        assert(True)
+    if (
+        str(name) in external_vars.failing_as_unspecified and test_pass_bool
+    ):  # Test passed when it is not expected tp
+        external_vars.tests_passed_unexpectedly.append(name)
+        assert False, f"Test {name} is in failing_as_unspecified but passed"
+    elif (
+        str(name) in external_vars.failing_as_unspecified and test_pass_bool is False
+    ):  # Test failed as expected
+        assert True
 
-    if (str(name) in vars.unsupported and testPassed): # Test passed when it is not expected tp
-        vars.passedUnexpectedly.append(name)
-        assert(False), f"Test {name} is in unsupported but passed"
-    elif (str(name) in vars.unsupported and testPassed is False): # Test failed as expected
-        assert(True)
+    if (
+        str(name) in external_vars.unsupported and test_pass_bool
+    ):  # Test passed when it is not expected tp
+        external_vars.tests_passed_unexpectedly.append(name)
+        assert False, f"Test {name} is in unsupported but passed"
+    elif (
+        str(name) in external_vars.unsupported and test_pass_bool is False
+    ):  # Test failed as expected
+        assert True
 
-    if (str(name) not in vars.unsupported and str(name) not in vars.known_failures and str(name) not in vars.failing_as_unspecified):
-        if (not testPassed):
-            vars.failedUnexpectedly.append(name)
-        assert(testPassed), f"Error on test, {name} expected to pass: {errMsg}"
+    if (
+        str(name) not in external_vars.unsupported
+        and str(name) not in external_vars.known_failures
+        and str(name) not in external_vars.failing_as_unspecified
+    ):
+        if not test_pass_bool:
+            external_vars.tests_failed_unexpectedly.append(name)
+        assert (
+            test_pass_bool
+        ), f"Error on test, {name} expected to pass: {error_message}"
