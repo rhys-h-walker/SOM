@@ -156,9 +156,7 @@ def checkOut(result, expstd, experr, errorMessage):
     return True
 
 
-location = (
-    "./core-lib/IntegrationTests/Tests"  # This is a definite location of this file
-)
+location = os.path.relpath(os.path.dirname(__file__) + "../Tests")
 
 if "CLASSPATH" not in os.environ:
     sys.exit("Please set the CLASSPATH environment variable")
