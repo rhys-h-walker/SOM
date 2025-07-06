@@ -188,7 +188,11 @@ readDirectory(location, testFiles, ignoredTests)
 TESTS_LIST = assembleTestDictionary(testFiles)
 
 
-@pytest.mark.parametrize("name,stdout,stderr,customCP", TESTS_LIST, ids=[str(test_args[0]) for test_args in TESTS_LIST])
+@pytest.mark.parametrize(
+    "name,stdout,stderr,customCP",
+    TESTS_LIST,
+    ids=[str(test_args[0]) for test_args in TESTS_LIST],
+)
 def tests_runner(name, stdout, stderr, customCP):
     """
     Take an array of dictionaries with test file names and expected output
