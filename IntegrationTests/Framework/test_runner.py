@@ -111,16 +111,6 @@ def parseTestFile(testFile):
     return testTuple
 
 
-def idfn(name):
-    """
-    Generate a unique ID for each test based on the test name
-    Tests that are in IntegrationTests/Tests are just their filename
-    Tests that are in subdirectories will have their relative path preserved
-    """
-    finalName = str(name).replace("core-lib/IntegrationTests/Tests/", "")
-    return finalName
-
-
 def checkOut(result, expstd, experr, errorMessage):
     """
     check if the output of the test matches the expected output
@@ -198,7 +188,7 @@ readDirectory(location, testFiles, ignoredTests)
 TESTS_LIST = assembleTestDictionary(testFiles)
 
 
-@pytest.mark.parametrize("name,stdout,stderr,customCP", TESTS_LIST, ids=idfn)
+@pytest.mark.parametrize("name,stdout,stderr,customCP", TESTS_LIST, ids=[str(test_args[0]) for test_args in TESTS_LIST])
 def tests_runner(name, stdout, stderr, customCP):
     """
     Take an array of dictionaries with test file names and expected output
