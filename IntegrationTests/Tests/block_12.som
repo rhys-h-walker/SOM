@@ -2,7 +2,7 @@
 VM:
   stdout:
     false 0
-    instance of block12
+    instance of block_12
 "
 
 block_12 = (
