@@ -5,7 +5,7 @@ VM:
     instance of block12
 "
 
-block12 = (
+block_12 = (
     | i |
     r: b = (
         | x |

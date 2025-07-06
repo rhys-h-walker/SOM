@@ -1,16 +1,16 @@
 "
 VM:
   stdout:
-    a
+    7
 "
 
-block9 = (
+block_10 = (
     f = (
-        self g: [ :x | ^ x ].
+        self g: [ :x :y | ^ (x - y) ].
         ^'b'
     )
 
-    g: block = ( ^block value: 'a' )
+    g: block = ( ^block value: 10 with: 3 )
 
     run = (
         self f println
