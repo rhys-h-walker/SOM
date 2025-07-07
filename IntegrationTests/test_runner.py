@@ -1,13 +1,24 @@
 import subprocess
 from pathlib import Path
-from debug import debug, debugList
 import os
 import sys
 import pytest
 
-global CLASSPATH
-global EXECUTABLE
-global TESTS_LIST
+def debug(message, DEBUG):
+    """
+    Take a string as a mesasage and output if DEBUG is true
+    """
+    if DEBUG is True:
+        print(message)
+
+
+def debugList(messageList, DEBUG, prefix="", postfix=""):
+    """
+    Take a list of messages and output if DEBUG is true, with a prefix and a postfix
+    """
+    if DEBUG is True:
+        for message in messageList:
+            print(prefix + str(message) + postfix)
 
 
 def locateTests(path, testFiles, ignoredTests):
@@ -145,8 +156,9 @@ def checkOut(result, expstd, experr, errorMessage):
     # If we made it this far then the test passed
     return True
 
+# Code below here runs before pytest finds it's methods
 
-location = os.path.relpath(os.path.dirname(__file__) + "/../Tests")
+location = os.path.relpath(os.path.dirname(__file__) + "/Tests")
 
 if "CLASSPATH" not in os.environ:
     sys.exit("Please set the CLASSPATH environment variable")
@@ -162,7 +174,7 @@ CLASSPATH = os.environ["CLASSPATH"]
 EXECUTABLE = os.environ["EXECUTABLE"]
 
 debug(
-    f"DEBUG is set to: {DEBUG}\nCLASSPATH is set to: {CLASSPATH}\nEXECUTABLE is set to: {EXECUTABLE}",
+    f"DEBUG is set to: {DEBUG}\nCLASSPATH is set to: {CLASSPATH}\nEXECUTABLE is set to: {EXECUTABLE}\nLocation is set to: {location}",
     DEBUG,
 )
 
@@ -229,5 +241,4 @@ Command used   : {command}
         errMsg += f"Command failed with return code: {result.returncode}\n"
 
     # SOM level errors will be raised in stdout only SOM++ errors are in stderr (Most tests are for SOM level errors) STILL NEEDS MORE WORK
-    # assert all(element in result.stdout for element in stdout) and all(element in result.stderr for element in stderr) or all(element in result.stderr for element in stdout) and all (element in result.stdout for element in stderr), errMsg
     checkOut(result, stdout, stderr, errMsg)
