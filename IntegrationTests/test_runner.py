@@ -195,12 +195,13 @@ GENERATE_REPORT_LOCATION is set to: {vars.GENERATE_REPORT_LOCATION}
 )
 
 debug(f"Opening test_tags")
-with open(f"{vars.TEST_EXCEPTIONS}", "r") as f:
-    yamlFile = yaml.safe_load(f)
-    vars.known_failures = (yamlFile["known_failures"])
-    vars.failing_as_unspecified = (yamlFile["failing_as_unspecified"])
-    vars.unsupported = (yamlFile["unsupported"])
-    vars.do_not_run = yamlFile["do_not_run"] # Tests here do not fail at a SOM level but at a python level (e.g. Invalud UTF-8 characters)
+if vars.TEST_EXCEPTIONS:
+    with open(f"{vars.TEST_EXCEPTIONS}", "r") as f:
+        yamlFile = yaml.safe_load(f)
+        vars.known_failures = (yamlFile["known_failures"])
+        vars.failing_as_unspecified = (yamlFile["failing_as_unspecified"])
+        vars.unsupported = (yamlFile["unsupported"])
+        vars.do_not_run = yamlFile["do_not_run"] # Tests here do not fail at a SOM level but at a python level (e.g. Invalud UTF-8 characters)
 
 debugList(vars.known_failures, prefix="Failure expected from: ")
 debugList(vars.failing_as_unspecified, prefix="Failure expected through undefined behaviour: ")
@@ -272,10 +273,8 @@ Command used   : {command}
         assert(False), f"Test {name} is in unsupported but passed"
     elif (str(name) in vars.unsupported and testPassed is False): # Test failed as expected
         assert(True)
-    
+
     if (str(name) not in vars.unsupported and str(name) not in vars.known_failures and str(name) not in vars.failing_as_unspecified):
         if (not testPassed):
             vars.failedUnexpectedly.append(name)
         assert(testPassed), f"Error on test, {name} expected to pass: {errMsg}"
-
-

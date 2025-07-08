@@ -38,8 +38,8 @@ def pytest_runtest_logreport(report):
 # Run after all tests completed, Generate a report of failing and passing tests
 def pytest_sessionfinish(session, exitstatus):
     print("Running this method")
-    os.makedirs(GENERATE_REPORT_LOCATION, exist_ok=True)
     if GENERATE_REPORT:
+        os.makedirs(GENERATE_REPORT_LOCATION, exist_ok=True)
         report_message = f"""
 Pytest Completed with {tests_passed}/{total_tests} passing:
 
