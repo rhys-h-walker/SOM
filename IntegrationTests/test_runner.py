@@ -4,19 +4,21 @@ import os
 import sys
 import pytest
 import yaml
-def debug(message, DEBUG):
+import conftest as vars
+
+def debug(message):
     """
     Take a string as a mesasage and output if DEBUG is true
     """
-    if DEBUG is True:
+    if vars.DEBUG is True:
         print(message)
 
 
-def debugList(messageList, DEBUG, prefix="", postfix=""):
+def debugList(messageList, prefix="", postfix=""):
     """
     Take a list of messages and output if DEBUG is true, with a prefix and a postfix
     """
-    if DEBUG is True:
+    if vars.DEBUG is True:
         for message in messageList:
             print(prefix + str(message) + postfix)
 
@@ -53,7 +55,7 @@ def readDirectory(path, testFiles):
     locateTests(path, testFiles)
 
 
-def assembleTestDictionary(testFiles, do_not_run):
+def assembleTestDictionary(testFiles):
     """
     Assemble a dictionary of
     name: the name of the test file
@@ -158,9 +160,8 @@ def checkOut(result, expstd, experr, errorMessage):
 location = os.path.relpath(os.path.dirname(__file__) + "/Tests")
 
 # Work out settings for the application (They are labelled REQUIRED or OPTIONAL)
-DEBUG = False
 if "DEBUG" in os.environ: # OPTIONAL
-    DEBUG = os.environ["DEBUG"].lower() == "true"
+    vars.DEBUG = os.environ["DEBUG"].lower() == "true"
 
 if "CLASSPATH" not in os.environ: # REQUIRED
     sys.exit("Please set the CLASSPATH environment variable")
@@ -169,44 +170,46 @@ if "EXECUTABLE" not in os.environ: # REQUIRED
     sys.exit("Please set the EXECUTABLE environment variable")
 
 if "TEST_EXCEPTIONS" in os.environ: # OPTIONAL
-    TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
+    vars.TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
 
-GENERATE_REPORT = False
-GENERATE_REPORT_LOCATION = ""
+vars.GENERATE_REPORT = False
 if "GENERATE_REPORT" in os.environ: # OPTIONAL
     # Value is the location
     # Its prescense in env variables signifies intent to save
-    GENERATE_REPORT_LOCATION = os.environ["GENERATE_REPORT"]
-    GENERATE_REPORT = True
+    vars.GENERATE_REPORT_LOCATION = os.environ["GENERATE_REPORT"]
+    vars.GENERATE_REPORT = True
 
-CLASSPATH = os.environ["CLASSPATH"]
-EXECUTABLE = os.environ["EXECUTABLE"]
+vars.CLASSPATH = os.environ["CLASSPATH"]
+vars.EXECUTABLE = os.environ["EXECUTABLE"]
 
 debug(
-    f"DEBUG is set to: {DEBUG}\nCLASSPATH is set to: {CLASSPATH}\nEXECUTABLE is set to: {EXECUTABLE}\nTEST_EXCEPTIONS is set to: {TEST_EXCEPTIONS}\n",
-    DEBUG,
+    f"""
+\n\nWelcome to SOM Integration Testing
+\nDEBUG is set to: {vars.DEBUG}
+CLASSPATH is set to: {vars.CLASSPATH}
+EXECUTABLE is set to: {vars.EXECUTABLE}
+TEST_EXCEPTIONS is set to: {vars.TEST_EXCEPTIONS}
+GENERATE_REPORT is set to: {vars.GENERATE_REPORT}
+GENERATE_REPORT_LOCATION is set to: {vars.GENERATE_REPORT_LOCATION}
+"""
 )
 
-known_failures = []
-failing_as_unspecified = []
-unsupported = []
-do_not_run = []
-
-debug(f"Opening test_tags", DEBUG)
-with open(f"{TEST_EXCEPTIONS}", "r") as f:
+debug(f"Opening test_tags")
+with open(f"{vars.TEST_EXCEPTIONS}", "r") as f:
     yamlFile = yaml.safe_load(f)
-    known_failures = (yamlFile["known_failures"])
-    failing_as_unspecified = (yamlFile["failing_as_unspecified"])
-    unsupported = (yamlFile["unsupported"])
-    do_not_run = yamlFile["do_not_run"] # Tests here do not fail at a SOM level but at a python level (e.g. Invalud UTF-8 characters)
+    vars.known_failures = (yamlFile["known_failures"])
+    vars.failing_as_unspecified = (yamlFile["failing_as_unspecified"])
+    vars.unsupported = (yamlFile["unsupported"])
+    vars.do_not_run = yamlFile["do_not_run"] # Tests here do not fail at a SOM level but at a python level (e.g. Invalud UTF-8 characters)
 
-debugList(known_failures, DEBUG)
-if ("core-lib/IntegrationTests/Tests/shift_right.som" in known_failures):
-    debug("TEST IS IN KNOWN FAILURES", DEBUG)
+debugList(vars.known_failures, prefix="Failure expected from: ")
+debugList(vars.failing_as_unspecified, prefix="Failure expected through undefined behaviour: ")
+debugList(vars.unsupported, prefix="Test that fails through unsupported bahaviour: ")
+debugList(vars.do_not_run, prefix="Test that will not run through python breaking logic: ")
 
 testFiles = []
 readDirectory(location, testFiles)
-TESTS_LIST = assembleTestDictionary(testFiles, do_not_run)
+TESTS_LIST = assembleTestDictionary(testFiles)
 
 @pytest.mark.parametrize(
     "name,stdout,stderr,customCP",
@@ -220,21 +223,18 @@ def tests_runner(name, stdout, stderr, customCP):
     Cleanup the build directory if required
     """
 
-    if (str(name) in do_not_run):
-        debug(f"Not running test {name}", DEBUG)
-        return # DO NOT RUN THIS TEST
-
-    debug(f"\n----------------------------------------------------\n", DEBUG)
+    # Check if a test shoudld not be ran
+    if (str(name) in vars.do_not_run):
+        debug(f"Not running test {name}")
+        pytest.skip("Test included in do_not_run")
 
     if customCP != "NaN":
-        debug(f"Using standard classpath: {CLASSPATH}", DEBUG)
-        command = f"{EXECUTABLE} -cp {customCP} {name}"
+        debug(f"Using custom classpath: {customCP}")
+        command = f"{vars.EXECUTABLE} -cp {customCP} {name}"
     else:
-        debug(f"Using custom classpath: {customCP}", DEBUG)
-        command = f"{EXECUTABLE} -cp {CLASSPATH} {name}"
+        command = f"{vars.EXECUTABLE} -cp {vars.CLASSPATH} {name}"
 
-    debug(f"Running test: {name}", DEBUG)
-    debug(f"Command: {command}", DEBUG)
+    debug(f"Running test: {name}")
 
     result = subprocess.run(command, capture_output=True, text=True, shell=True)
 
@@ -255,23 +255,27 @@ Command used   : {command}
     testPassed = checkOut(result, stdout, stderr, errMsg)
 
     # Check if we have any unexpectedly passing tests
-    if (name in known_failures and testPassed): # Test passed when it is not expected tp
+    if (str(name) in vars.known_failures and testPassed): # Test passed when it is not expected tp
+        vars.passedUnexpectedly.append(name)
         assert(False), f"Test {name} is in known_failures but passed"
-    elif (name in known_failures and testPassed is False): # Test failed as expected
+    elif (str(name) in vars.known_failures and testPassed is False): # Test failed as expected
         assert(True)
 
-    if (name in failing_as_unspecified and testPassed): # Test passed when it is not expected tp
+    if (str(name) in vars.failing_as_unspecified and testPassed): # Test passed when it is not expected tp
+        vars.passedUnexpectedly.append(name)
         assert(False), f"Test {name} is in failing_as_unspecified but passed"
-    elif (name in failing_as_unspecified and testPassed is False): # Test failed as expected
+    elif (str(name) in vars.failing_as_unspecified and testPassed is False): # Test failed as expected
         assert(True)
 
-    if (name in unsupported and testPassed): # Test passed when it is not expected tp
+    if (str(name) in vars.unsupported and testPassed): # Test passed when it is not expected tp
+        vars.passedUnexpectedly.append(name)
         assert(False), f"Test {name} is in unsupported but passed"
-    elif (name in unsupported and testPassed is False): # Test failed as expected
+    elif (str(name) in vars.unsupported and testPassed is False): # Test failed as expected
         assert(True)
-
-    if (name in known_failures):
-        print(name)
     
-    if (name not in unsupported and name not in known_failures and name not in failing_as_unspecified):
-        assert(True), f"Error on test, {name} expected to pass: {errMsg}"
+    if (str(name) not in vars.unsupported and str(name) not in vars.known_failures and str(name) not in vars.failing_as_unspecified):
+        if (not testPassed):
+            vars.failedUnexpectedly.append(name)
+        assert(testPassed), f"Error on test, {name} expected to pass: {errMsg}"
+
+
