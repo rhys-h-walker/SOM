@@ -160,15 +160,20 @@ def checkOut(result, expstd, experr, errorMessage):
 
 location = os.path.relpath(os.path.dirname(__file__) + "/Tests")
 
+DEBUG = False
+if "DEBUG" in os.environ:
+    DEBUG = os.environ["DEBUG"].lower() == "true"
+
 if "CLASSPATH" not in os.environ:
     sys.exit("Please set the CLASSPATH environment variable")
 
 if "EXECUTABLE" not in os.environ:
     sys.exit("Please set the EXECUTABLE environment variable")
 
-DEBUG = False
-if "DEBUG" in os.environ:
-    DEBUG = os.environ["DEBUG"].lower() == "true"
+if "TEST_EXCEPTIONS" not in os.environ:
+    debug("No Exceptions file set. Proceeding with all tests running", DEBUG)
+else:
+    TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
 
 CLASSPATH = os.environ["CLASSPATH"]
 EXECUTABLE = os.environ["EXECUTABLE"]
@@ -180,18 +185,8 @@ debug(
 
 # First open any tests to be ignored
 debug(f"Locating SOM ignored tests", DEBUG)
-# with open(f"./core-lib/IntegrationTests/ignored_tests.txt", "r") as f:
-ignoredTests = []  # [Path(line.strip()) for line in f.readlines()]
-
-# Now check if we have any supplementary implementation specific tests to ignore
-debug(f"Locating implementation specific ignored tests", DEBUG)
-if Path(f"./pignore").exists():
-    with open("./pignore", "r") as f:
-        for line in f.readlines():
-            if line not in ignoredTests:
-                ignoredTests.append(Path(line.strip()))
-            else:
-                continue
+with open(f"{TEST_EXCEPTIONS}", "r") as f:
+    ignoredTests = [Path(line.strip()) for line in f.readlines()]
 
 debugList(ignoredTests, DEBUG, prefix="Ignored test: ")
 
