@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 import sys
 import pytest
-
+import yaml
 def debug(message, DEBUG):
     """
     Take a string as a mesasage and output if DEBUG is true
@@ -21,7 +21,7 @@ def debugList(messageList, DEBUG, prefix="", postfix=""):
             print(prefix + str(message) + postfix)
 
 
-def locateTests(path, testFiles, ignoredTests):
+def locateTests(path, testFiles):
     """
     Locate all test files that exist in the given directory
     Ignore any tests which are in the ignoredTests directory
@@ -31,31 +31,27 @@ def locateTests(path, testFiles, ignoredTests):
     # To ID a file will be opened and at the top there should be a comment which starts with VM:
     for file in Path(path).glob("*.som"):
         # Check if the file is in the ignored tests (Check via path, multiple tests named test.som)
-        if file in ignoredTests:
-            continue
-        else:
-            with open(file, "r") as f:
-                contents = f.read()
-                if "VM" in contents:
-                    testFiles.append(file)
+        with open(file, "r") as f:
+            contents = f.read()
+            if "VM" in contents:
+                testFiles.append(file)
 
     return testFiles
 
 
-def readDirectory(path, testFiles, ignoredTests):
+def readDirectory(path, testFiles):
     """
     Recursively read all sub directories
     Path is the directory we are currently in
     testFiles is the list of test files we are building up
-    ignoredTests is the list of test files that should be ignored
     """
     for directory in Path(path).iterdir():
         if directory.is_dir():
-            readDirectory(directory, testFiles, ignoredTests)
+            readDirectory(directory, testFiles)
         else:
             continue
 
-    locateTests(path, testFiles, ignoredTests)
+    locateTests(path, testFiles)
 
 
 def assembleTestDictionary(testFiles):
@@ -183,16 +179,22 @@ debug(
     DEBUG,
 )
 
-# First open any tests to be ignored
-debug(f"Locating SOM ignored tests", DEBUG)
-with open(f"{TEST_EXCEPTIONS}", "r") as f:
-    ignoredTests = [Path(line.strip()) for line in f.readlines()]
+known_failures = []
+failing_as_unspecified = []
+unsupported = []
 
-debugList(ignoredTests, DEBUG, prefix="Ignored test: ")
+debug(f"Opening test_tags", DEBUG)
+with open(f"{TEST_EXCEPTIONS}", "r") as f:
+    yamlFile = yaml.safe_load(f)
+    known_failures = (yamlFile["known_failures"])
+    failing_as_unspecified = (yamlFile["failing_as_unspecified"])
+    unsupported = (yamlFile["unsupported"])
 
 testFiles = []
-readDirectory(location, testFiles, ignoredTests)
+readDirectory(location, testFiles)
 TESTS_LIST = assembleTestDictionary(testFiles)
+
+quit()
 
 
 @pytest.mark.parametrize(
