@@ -27,7 +27,6 @@ def locateTests(path, testFiles):
     Ignore any tests which are in the ignoredTests directory
     Return a list of paths to the test files
     """
-
     # To ID a file will be opened and at the top there should be a comment which starts with VM:
     for file in Path(path).glob("*.som"):
         # Check if the file is in the ignored tests (Check via path, multiple tests named test.som)
@@ -54,7 +53,7 @@ def readDirectory(path, testFiles):
     locateTests(path, testFiles)
 
 
-def assembleTestDictionary(testFiles):
+def assembleTestDictionary(testFiles, do_not_run):
     """
     Assemble a dictionary of
     name: the name of the test file
@@ -136,14 +135,16 @@ def checkOut(result, expstd, experr, errorMessage):
 
     # Check if each line in stdout and stderr is in the expected output
     for line in expstd:
-        assert any(line in out_line for out_line in stdout), errorMessage
+        if not any(line in out_line for out_line in stdout):
+            return False
         if line in stdout:
             stdout.remove(line)
         if line in stderr:
             stderr.remove(line)
 
     for line in experr:
-        assert any(line in err_line for err_line in stderr), errorMessage
+        if not any(line in err_line for err_line in stderr):
+            return False
         if line in stdout:
             stdout.remove(line)
         if line in stderr:
@@ -156,32 +157,40 @@ def checkOut(result, expstd, experr, errorMessage):
 
 location = os.path.relpath(os.path.dirname(__file__) + "/Tests")
 
+# Work out settings for the application (They are labelled REQUIRED or OPTIONAL)
 DEBUG = False
-if "DEBUG" in os.environ:
+if "DEBUG" in os.environ: # OPTIONAL
     DEBUG = os.environ["DEBUG"].lower() == "true"
 
-if "CLASSPATH" not in os.environ:
+if "CLASSPATH" not in os.environ: # REQUIRED
     sys.exit("Please set the CLASSPATH environment variable")
 
-if "EXECUTABLE" not in os.environ:
+if "EXECUTABLE" not in os.environ: # REQUIRED
     sys.exit("Please set the EXECUTABLE environment variable")
 
-if "TEST_EXCEPTIONS" not in os.environ:
-    debug("No Exceptions file set. Proceeding with all tests running", DEBUG)
-else:
+if "TEST_EXCEPTIONS" in os.environ: # OPTIONAL
     TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
+
+GENERATE_REPORT = False
+GENERATE_REPORT_LOCATION = ""
+if "GENERATE_REPORT" in os.environ: # OPTIONAL
+    # Value is the location
+    # Its prescense in env variables signifies intent to save
+    GENERATE_REPORT_LOCATION = os.environ["GENERATE_REPORT"]
+    GENERATE_REPORT = True
 
 CLASSPATH = os.environ["CLASSPATH"]
 EXECUTABLE = os.environ["EXECUTABLE"]
 
 debug(
-    f"DEBUG is set to: {DEBUG}\nCLASSPATH is set to: {CLASSPATH}\nEXECUTABLE is set to: {EXECUTABLE}\nLocation is set to: {location}",
+    f"DEBUG is set to: {DEBUG}\nCLASSPATH is set to: {CLASSPATH}\nEXECUTABLE is set to: {EXECUTABLE}\nTEST_EXCEPTIONS is set to: {TEST_EXCEPTIONS}\n",
     DEBUG,
 )
 
 known_failures = []
 failing_as_unspecified = []
 unsupported = []
+do_not_run = []
 
 debug(f"Opening test_tags", DEBUG)
 with open(f"{TEST_EXCEPTIONS}", "r") as f:
@@ -189,13 +198,15 @@ with open(f"{TEST_EXCEPTIONS}", "r") as f:
     known_failures = (yamlFile["known_failures"])
     failing_as_unspecified = (yamlFile["failing_as_unspecified"])
     unsupported = (yamlFile["unsupported"])
+    do_not_run = yamlFile["do_not_run"] # Tests here do not fail at a SOM level but at a python level (e.g. Invalud UTF-8 characters)
+
+debugList(known_failures, DEBUG)
+if ("core-lib/IntegrationTests/Tests/shift_right.som" in known_failures):
+    debug("TEST IS IN KNOWN FAILURES", DEBUG)
 
 testFiles = []
 readDirectory(location, testFiles)
-TESTS_LIST = assembleTestDictionary(testFiles)
-
-quit()
-
+TESTS_LIST = assembleTestDictionary(testFiles, do_not_run)
 
 @pytest.mark.parametrize(
     "name,stdout,stderr,customCP",
@@ -208,7 +219,10 @@ def tests_runner(name, stdout, stderr, customCP):
     Run all of the tests and check the output
     Cleanup the build directory if required
     """
-    global EXECUTABLE, CLASSPATH
+
+    if (str(name) in do_not_run):
+        debug(f"Not running test {name}", DEBUG)
+        return # DO NOT RUN THIS TEST
 
     debug(f"\n----------------------------------------------------\n", DEBUG)
 
@@ -237,5 +251,27 @@ Command used   : {command}
     if result.returncode != 0:
         errMsg += f"Command failed with return code: {result.returncode}\n"
 
-    # SOM level errors will be raised in stdout only SOM++ errors are in stderr (Most tests are for SOM level errors) STILL NEEDS MORE WORK
-    checkOut(result, stdout, stderr, errMsg)
+    # SOM level errors will be raised in stdout only SOM++ errors are in stderr (Most tests are for SOM level errors)
+    testPassed = checkOut(result, stdout, stderr, errMsg)
+
+    # Check if we have any unexpectedly passing tests
+    if (name in known_failures and testPassed): # Test passed when it is not expected tp
+        assert(False), f"Test {name} is in known_failures but passed"
+    elif (name in known_failures and testPassed is False): # Test failed as expected
+        assert(True)
+
+    if (name in failing_as_unspecified and testPassed): # Test passed when it is not expected tp
+        assert(False), f"Test {name} is in failing_as_unspecified but passed"
+    elif (name in failing_as_unspecified and testPassed is False): # Test failed as expected
+        assert(True)
+
+    if (name in unsupported and testPassed): # Test passed when it is not expected tp
+        assert(False), f"Test {name} is in unsupported but passed"
+    elif (name in unsupported and testPassed is False): # Test failed as expected
+        assert(True)
+
+    if (name in known_failures):
+        print(name)
+    
+    if (name not in unsupported and name not in known_failures and name not in failing_as_unspecified):
+        assert(True), f"Error on test, {name} expected to pass: {errMsg}"

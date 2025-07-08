@@ -31,7 +31,6 @@ known_failures:
   - core-lib/IntegrationTests/Tests/cos.som
   - core-lib/IntegrationTests/Tests/array_literals.som
   - core-lib/IntegrationTests/Tests/fromstring_double.som
-  - core-lib/IntegrationTests/Tests/substring.som
   - core-lib/IntegrationTests/Tests/sin.som
   - core-lib/IntegrationTests/Tests/double12.som
   - core-lib/IntegrationTests/Tests/double1.som
@@ -117,3 +116,5 @@ failing_as_unspecified:
   - null
 unsupported:
   - null
+do_not_run:
+  - core-lib/IntegrationTests/Tests/substring.som
