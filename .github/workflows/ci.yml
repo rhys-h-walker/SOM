@@ -10,14 +10,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Black and PyLint
+      - name: Install Black==25.1.0 and PyLint==3.3.7
         run: |
           python -m pip install --upgrade pip
           pip install black pylint
 
       - name: Run Black Check
         run: |
-          black ./IntegrationTests --check
+          black ./IntegrationTests --check --diff
       
       - name: Run PyLint
         run: |
