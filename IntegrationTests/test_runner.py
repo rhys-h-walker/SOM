@@ -180,7 +180,6 @@ if "EXECUTABLE" not in os.environ:  # REQUIRED
 if "TEST_EXCEPTIONS" in os.environ:  # OPTIONAL
     external_vars.TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
 
-external_vars.GENERATE_REPORT = False
 if "GENERATE_REPORT" in os.environ:  # OPTIONAL
     # Value is the location
     # Its prescense in env variables signifies intent to save
