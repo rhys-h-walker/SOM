@@ -194,7 +194,7 @@ jobs:
           pip install pytest
           export EXECUTABLE="som-vm/${{ matrix.som }}"
           export CLASSPATH=Smalltalk
-          pytest IntegrationTests/Framework
+          pytest IntegrationTests
 
       # We currently test SomSom only on TruffleSOM
       - name: Test SomSom on TruffleSOM
