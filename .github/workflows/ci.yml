@@ -17,11 +17,11 @@ jobs:
 
       - name: Run Black Check
         run: |
-          black ./IntegrationTests/Framework --check
+          black ./Framework --check
       
       - name: Run PyLint
         run: |
-          pylint ./IntegrationTests/Framework/test_runner.py ./IntegrationTests/Framework/debug.py
+          pylint ./IntegrationTests/test_runner.py ./IntegrationTests/conftest.py
 
   test_soms:
     runs-on: ubuntu-24.04 # ubuntu-latest

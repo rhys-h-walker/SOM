@@ -23,6 +23,7 @@ GENERATE_REPORT_LOCATION = ""
 TEST_EXCEPTIONS = ""
 GENERATE_REPORT = False
 
+
 # Log data
 def pytest_runtest_logreport(report):
     global total_tests, tests_passed, tests_failed, tests_skipped
@@ -34,6 +35,7 @@ def pytest_runtest_logreport(report):
             tests_failed += 1
         elif report.skipped:
             tests_skipped += 1
+
 
 # Run after all tests completed, Generate a report of failing and passing tests
 def pytest_sessionfinish(session, exitstatus):

@@ -6,6 +6,7 @@ import pytest
 import yaml
 import conftest as vars
 
+
 def debug(message):
     """
     Take a string as a mesasage and output if DEBUG is true
@@ -155,25 +156,26 @@ def checkOut(result, expstd, experr, errorMessage):
     # If we made it this far then the test passed
     return True
 
+
 # Code below here runs before pytest finds it's methods
 
 location = os.path.relpath(os.path.dirname(__file__) + "/Tests")
 
 # Work out settings for the application (They are labelled REQUIRED or OPTIONAL)
-if "DEBUG" in os.environ: # OPTIONAL
+if "DEBUG" in os.environ:  # OPTIONAL
     vars.DEBUG = os.environ["DEBUG"].lower() == "true"
 
-if "CLASSPATH" not in os.environ: # REQUIRED
+if "CLASSPATH" not in os.environ:  # REQUIRED
     sys.exit("Please set the CLASSPATH environment variable")
 
-if "EXECUTABLE" not in os.environ: # REQUIRED
+if "EXECUTABLE" not in os.environ:  # REQUIRED
     sys.exit("Please set the EXECUTABLE environment variable")
 
-if "TEST_EXCEPTIONS" in os.environ: # OPTIONAL
+if "TEST_EXCEPTIONS" in os.environ:  # OPTIONAL
     vars.TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
 
 vars.GENERATE_REPORT = False
-if "GENERATE_REPORT" in os.environ: # OPTIONAL
+if "GENERATE_REPORT" in os.environ:  # OPTIONAL
     # Value is the location
     # Its prescense in env variables signifies intent to save
     vars.GENERATE_REPORT_LOCATION = os.environ["GENERATE_REPORT"]
@@ -198,19 +200,26 @@ debug(f"Opening test_tags")
 if vars.TEST_EXCEPTIONS:
     with open(f"{vars.TEST_EXCEPTIONS}", "r") as f:
         yamlFile = yaml.safe_load(f)
-        vars.known_failures = (yamlFile["known_failures"])
-        vars.failing_as_unspecified = (yamlFile["failing_as_unspecified"])
-        vars.unsupported = (yamlFile["unsupported"])
-        vars.do_not_run = yamlFile["do_not_run"] # Tests here do not fail at a SOM level but at a python level (e.g. Invalud UTF-8 characters)
+        vars.known_failures = yamlFile["known_failures"]
+        vars.failing_as_unspecified = yamlFile["failing_as_unspecified"]
+        vars.unsupported = yamlFile["unsupported"]
+        vars.do_not_run = yamlFile[
+            "do_not_run"
+        ]  # Tests here do not fail at a SOM level but at a python level (e.g. Invalud UTF-8 characters)
 
 debugList(vars.known_failures, prefix="Failure expected from: ")
-debugList(vars.failing_as_unspecified, prefix="Failure expected through undefined behaviour: ")
+debugList(
+    vars.failing_as_unspecified, prefix="Failure expected through undefined behaviour: "
+)
 debugList(vars.unsupported, prefix="Test that fails through unsupported bahaviour: ")
-debugList(vars.do_not_run, prefix="Test that will not run through python breaking logic: ")
+debugList(
+    vars.do_not_run, prefix="Test that will not run through python breaking logic: "
+)
 
 testFiles = []
 readDirectory(location, testFiles)
 TESTS_LIST = assembleTestDictionary(testFiles)
+
 
 @pytest.mark.parametrize(
     "name,stdout,stderr,customCP",
@@ -225,7 +234,7 @@ def tests_runner(name, stdout, stderr, customCP):
     """
 
     # Check if a test shoudld not be ran
-    if (str(name) in vars.do_not_run):
+    if str(name) in vars.do_not_run:
         debug(f"Not running test {name}")
         pytest.skip("Test included in do_not_run")
 
@@ -256,25 +265,41 @@ Command used   : {command}
     testPassed = checkOut(result, stdout, stderr, errMsg)
 
     # Check if we have any unexpectedly passing tests
-    if (str(name) in vars.known_failures and testPassed): # Test passed when it is not expected tp
+    if (
+        str(name) in vars.known_failures and testPassed
+    ):  # Test passed when it is not expected tp
         vars.passedUnexpectedly.append(name)
-        assert(False), f"Test {name} is in known_failures but passed"
-    elif (str(name) in vars.known_failures and testPassed is False): # Test failed as expected
-        assert(True)
+        assert False, f"Test {name} is in known_failures but passed"
+    elif (
+        str(name) in vars.known_failures and testPassed is False
+    ):  # Test failed as expected
+        assert True
 
-    if (str(name) in vars.failing_as_unspecified and testPassed): # Test passed when it is not expected tp
+    if (
+        str(name) in vars.failing_as_unspecified and testPassed
+    ):  # Test passed when it is not expected tp
         vars.passedUnexpectedly.append(name)
-        assert(False), f"Test {name} is in failing_as_unspecified but passed"
-    elif (str(name) in vars.failing_as_unspecified and testPassed is False): # Test failed as expected
-        assert(True)
+        assert False, f"Test {name} is in failing_as_unspecified but passed"
+    elif (
+        str(name) in vars.failing_as_unspecified and testPassed is False
+    ):  # Test failed as expected
+        assert True
 
-    if (str(name) in vars.unsupported and testPassed): # Test passed when it is not expected tp
+    if (
+        str(name) in vars.unsupported and testPassed
+    ):  # Test passed when it is not expected tp
         vars.passedUnexpectedly.append(name)
-        assert(False), f"Test {name} is in unsupported but passed"
-    elif (str(name) in vars.unsupported and testPassed is False): # Test failed as expected
-        assert(True)
+        assert False, f"Test {name} is in unsupported but passed"
+    elif (
+        str(name) in vars.unsupported and testPassed is False
+    ):  # Test failed as expected
+        assert True
 
-    if (str(name) not in vars.unsupported and str(name) not in vars.known_failures and str(name) not in vars.failing_as_unspecified):
-        if (not testPassed):
+    if (
+        str(name) not in vars.unsupported
+        and str(name) not in vars.known_failures
+        and str(name) not in vars.failing_as_unspecified
+    ):
+        if not testPassed:
             vars.failedUnexpectedly.append(name)
-        assert(testPassed), f"Error on test, {name} expected to pass: {errMsg}"
+        assert testPassed, f"Error on test, {name} expected to pass: {errMsg}"
