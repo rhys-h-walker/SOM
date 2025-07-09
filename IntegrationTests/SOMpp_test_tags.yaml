@@ -5,7 +5,6 @@ known_failures:
   - core-lib/IntegrationTests/Tests/string_length.som
   - core-lib/IntegrationTests/Tests/double2.som
   - core-lib/IntegrationTests/Tests/double13.som
-  - core-lib/IntegrationTests/Tests/fullgc.som
   - core-lib/IntegrationTests/Tests/int26.som
   - core-lib/IntegrationTests/Tests/integer_asdouble.som
   - core-lib/IntegrationTests/Tests/int_modulus.som
@@ -22,7 +21,6 @@ known_failures:
   - core-lib/IntegrationTests/Tests/double4.som
   - core-lib/IntegrationTests/Tests/int19.som
   - core-lib/IntegrationTests/Tests/system_global.som
-  - core-lib/IntegrationTests/Tests/load_file.som
   - core-lib/IntegrationTests/Tests/perform_unknown.som
   - core-lib/IntegrationTests/Tests/binary_super.som
   - core-lib/IntegrationTests/Tests/shift_right.som
