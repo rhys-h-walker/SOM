@@ -88,11 +88,11 @@ def parse_test_file(test_file):
 
         # Make sure if using a custom test classpath that it is above
         # Stdout and Stderr
-        if "customCP" in comment:
+        if "custom_classpath" in comment:
             comment_lines = comment.split("\n")
             for line in comment_lines:
-                if "customCP" in line:
-                    test_info_dict["customCP"] = line.split("customCP:")[1].strip()
+                if "custom_classpath" in line:
+                    test_info_dict["customCP"] = line.split("custom_classpath:")[1].strip()
                     continue
 
         if "stdout" in comment:

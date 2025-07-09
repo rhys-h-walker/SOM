@@ -1,7 +1,7 @@
 "
 VM:
     status: success
-    customCP: ./core-lib/Examples/AreWeFastYet/Core:./core-lib/Smalltalk
+    custom_classpath: ./core-lib/Examples/AreWeFastYet/Core:./core-lib/Smalltalk
     stdout:
         nil
 

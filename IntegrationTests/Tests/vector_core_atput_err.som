@@ -1,15 +1,13 @@
 "
 VM:
     status: success
-    customCP: ./core-lib/Examples/AreWeFastYet/Core:./core-lib/Smalltalk
     stdout:
         50
-        100
-        10
+        ERROR: Vector[1..3]: Index 51 out of bounds
 
 "
 
-vector_awfy_capacity = (
+vector_core_atput_err = (
     run = (
         | vec |
         vec := Vector new.
