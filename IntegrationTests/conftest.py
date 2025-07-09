@@ -1,15 +1,16 @@
 """
 Defines variables that are required for a report to be generated.
 """
+
 import os
 
 # Report Generate Logic
 tests_failed_unexpectedly = []
 tests_passed_unexpectedly = []
-tests_passed = 0 # pylint: disable=invalid-name
-tests_failed = 0 # pylint: disable=invalid-name
-total_tests = 0 # pylint: disable=invalid-name
-tests_skipped = 0 # pylint: disable=invalid-name
+tests_passed = 0  # pylint: disable=invalid-name
+tests_failed = 0  # pylint: disable=invalid-name
+total_tests = 0  # pylint: disable=invalid-name
+tests_skipped = 0  # pylint: disable=invalid-name
 
 # Lists containing references to each exception test
 known_failures = []
@@ -33,7 +34,7 @@ def pytest_runtest_logreport(report):
     """
     # Global required here to access counters
     # Not ideal but without the counters wouldn't work
-    global total_tests, tests_passed, tests_failed, tests_skipped # pylint: disable=global-statement
+    global total_tests, tests_passed, tests_failed, tests_skipped  # pylint: disable=global-statement
     if report.when == "call":  # only count test function execution, not setup/teardown
         total_tests += 1
         if report.passed:

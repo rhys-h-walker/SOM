@@ -2,6 +2,7 @@
 This is the SOM integration test runner file. Pytest automatically discovers
 this file and will find all .som test files in the below directories.
 """
+
 import subprocess
 from pathlib import Path
 import os
@@ -209,17 +210,19 @@ if external_vars.TEST_EXCEPTIONS:
         external_vars.failing_as_unspecified = yamlFile["failing_as_unspecified"]
         external_vars.unsupported = yamlFile["unsupported"]
         # Tests here do not fail at a SOM level but at a python level
-        external_vars.do_not_run = yamlFile[
-            "do_not_run"
-        ]
+        external_vars.do_not_run = yamlFile["do_not_run"]
 
 debug_list(external_vars.known_failures, prefix="Failure expected from: ")
 debug_list(
-    external_vars.failing_as_unspecified, prefix="Failure expected through undefined behaviour: "
+    external_vars.failing_as_unspecified,
+    prefix="Failure expected through undefined behaviour: ",
 )
-debug_list(external_vars.unsupported, prefix="Test that fails through unsupported bahaviour: ")
 debug_list(
-    external_vars.do_not_run, prefix="Test that will not run through python breaking logic: "
+    external_vars.unsupported, prefix="Test that fails through unsupported bahaviour: "
+)
+debug_list(
+    external_vars.do_not_run,
+    prefix="Test that will not run through python breaking logic: ",
 )
 
 testFiles = []
@@ -252,7 +255,9 @@ def tests_runner(name, stdout, stderr, custom_classpath):
 
     debug(f"Running test: {name}")
 
-    result = subprocess.run(command, capture_output=True, text=True, shell=True, check=False)
+    result = subprocess.run(
+        command, capture_output=True, text=True, shell=True, check=False
+    )
 
     # Produce potential error messages now and then run assertion
     error_message = f"""
@@ -307,4 +312,6 @@ Command used   : {command}
     ):
         if not test_pass_bool:
             external_vars.tests_failed_unexpectedly.append(name)
-        assert test_pass_bool, f"Error on test, {name} expected to pass: {error_message}"
+        assert (
+            test_pass_bool
+        ), f"Error on test, {name} expected to pass: {error_message}"
