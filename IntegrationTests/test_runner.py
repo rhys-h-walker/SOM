@@ -262,7 +262,7 @@ TESTS_LIST = assemble_test_dictionary(testFiles)
     TESTS_LIST,
     ids=[str(test_args[0]) for test_args in TESTS_LIST],
 )
-#pylint: disable=too-many-branches
+# pylint: disable=too-many-branches
 def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
     """
     Take an array of dictionaries with test file names and expected output
