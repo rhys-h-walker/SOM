@@ -2,7 +2,7 @@
 Defines variables that are required for a report to be generated.
 """
 
-import os
+import yaml
 
 # Report Generate Logic
 tests_failed_unexpectedly = []
@@ -19,12 +19,10 @@ unsupported = []
 do_not_run = []
 
 # Environment variables
-DEBUG = False
 CLASSPATH = ""
 EXECUTABLE = ""
-GENERATE_REPORT_LOCATION = ""
 TEST_EXCEPTIONS = ""
-GENERATE_REPORT = False
+GENERATE_REPORT = ""
 
 
 # Log data
@@ -46,52 +44,55 @@ def pytest_runtest_logreport(report):
 
 
 # Run after all tests completed, Generate a report of failing and passing tests
-def pytest_sessionfinish():
+def pytest_sessionfinish(exitstatus):
     """
     Generate report based on test run
     """
-    print("Running this method")
     if GENERATE_REPORT:
-        os.makedirs(GENERATE_REPORT_LOCATION, exist_ok=True)
+        print("Generating report for the test run")
+
+        # To make the report useful it will add the tests which have failed-
+        # -unexpectedly to known_failures
+        # It will also remove those that have passed from any of those lists
+
+        for test_path in tests_passed_unexpectedly:
+            test = str(test_path)
+            if test in known_failures:
+                known_failures.remove(test)
+            if test in unsupported:
+                unsupported.remove(test)
+            if test in failing_as_unspecified:
+                failing_as_unspecified.remove(test)
+
+        if len(tests_failed_unexpectedly) != 0:
+            for test in tests_failed_unexpectedly:
+                known_failures.append(str(test))
 
         # Generate a report_message to save
-        report_message = f"""
-Pytest Completed with {tests_passed}/{total_tests} passing:
-
-Test_total: {total_tests}  ** This includes those that we expect to fail **
-Tests_passed: {tests_passed} ** This includes those that we expect to fail **
-Tests_failed: {tests_failed}
-Tests_skipped: {tests_skipped}
-
-Tests that passed unexpectedly:
-{'\n'.join(f"{test}" for test in tests_passed_unexpectedly)}
-
-Tests that failed unexpectedly:
-{'\n'.join(f"{test}" for test in tests_failed_unexpectedly)}
-
-## ENVIRONMENT VARIABLES USED ##
-
-Executable: {EXECUTABLE}
-Classpath: {CLASSPATH}
-Test Exceptions: {TEST_EXCEPTIONS}
-Debug: {DEBUG}
-Generage Report: {GENERATE_REPORT_LOCATION}
-
-## TAGGED TESTS FILE ##
-
-Known_failures:
-{'\n'.join(f"{test}" for test in known_failures)}
-
-Failing_as_unspecified:
-{'\n'.join(f"{test}" for test in failing_as_unspecified)}
-
-Unsupported:
-{'\n'.join(f"{test}" for test in unsupported)}
-
-Do_not_run:
-{'\n'.join(f"{test}" for test in do_not_run)}
-"""
-        print(f"Report location {GENERATE_REPORT_LOCATION}/report.txt")
-        with open(f"{GENERATE_REPORT_LOCATION}/report.txt", "w", encoding="utf-8") as f:
-            f.write(report_message)
-            f.close()
+        report_data = {
+            "summary": {
+                "tests_total": total_tests,
+                "tests_passed": tests_passed,
+                "tests_failed": tests_failed,
+                "tests_skipped": tests_skipped,
+                "pytest_exitstatus": exitstatus,
+                "note": "Totals include expected failures",
+            },
+            "unexpected": {
+                "passed": [str(test) for test in tests_passed_unexpectedly],
+                "failed": [str(test) for test in tests_failed_unexpectedly],
+            },
+            "environment": {
+                "executable": EXECUTABLE,
+                "classpath": CLASSPATH,
+                "test_exceptions": TEST_EXCEPTIONS,
+                "generate_report_location": GENERATE_REPORT,
+            },
+            "known_failures": known_failures,
+            "failing_as_unspecified": failing_as_unspecified,
+            "unsupported": unsupported,
+            "do_not_run": do_not_run,
+        }
+        print(f"Report location {GENERATE_REPORT}")
+        with open(f"{GENERATE_REPORT}", "w", encoding="utf-8") as f:
+            yaml.dump(report_data, f, default_flow_style=False, sort_keys=False)

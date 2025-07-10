@@ -29,7 +29,7 @@ Generates a yaml file which can be used as a **TEST_EXCEPTIONS** file. It will a
 Allows the printing of detailed run information. Shows currently running test and the configuration before all tests are ran. Must run pytest with the -s flag when using DEBUG.
 
 ## TEST_EXCEPTIONS (How to write a file)
-There are four tags that are currently supported by the SOM integration tests. All tags will run the tests still, other than do_not_run, but will not fail on test failure, a tagged test will cause the run to fail only when it passes unexpectedly.
+There are four tags that are currently supported by the SOM integration tests. All tags will run the tests still, other than do_not_run, but will not fail on test failure, a tagged test will cause the run to fail only when it passes unexpectedly. Check for example file IntegrationTests/test_tags.yaml.
 
 For a test to be given that tag specify it's location path like this:
 ```
@@ -78,7 +78,7 @@ This is required as the base of the test structure and what allows the tests to 
 #### custom_classpath: 
 This allows for the specification of a custom classpath to be used. This is useful for loading different versions of classes with the same name. I.e. AWFY Vector instead of core-lib Vector. **The path to ./Smalltalk must still be specified after so that the Object class can be loaded**
 
-#### case_sensitive (Still a WiP)
+#### case_sensitive
 By default the tests are case insensitive (All outputs and expecteds are converted to be lower case) but by specifying True in case_sensitive that test can be checked as case_sensitive.
 
 #### stderr or stdout:
