@@ -47,12 +47,12 @@ def pytest_runtest_logreport(report):
 
 
 # Run after all tests completed, Generate a report of failing and passing tests
-def pytest_sessionfinish():
+def pytest_sessionfinish(exitstatus):
     """
     Generate report based on test run
     """
-    print("Running this method")
     if GENERATE_REPORT:
+        print("Generating report for the test run")
         os.makedirs(GENERATE_REPORT_LOCATION, exist_ok=True)
 
         # To make the report useful it will add the tests which have failed unexpectedly to known_failures
@@ -78,6 +78,7 @@ def pytest_sessionfinish():
                 "tests_passed": tests_passed,
                 "tests_failed": tests_failed,
                 "tests_skipped": tests_skipped,
+                "pytest_exitstatus": exitstatus,
                 "note": "Totals include expected failures"
             },
             "unexpected": {

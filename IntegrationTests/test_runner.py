@@ -81,7 +81,7 @@ def parse_test_file(test_file):
     """
     parse the test file to extract the important information
     """
-    test_info_dict = {"name": test_file, "stdout": [], "stderr": [], "customCP": "NaN"}
+    test_info_dict = {"name": test_file, "stdout": [], "stderr": [], "customCP": "NaN", "case_sensitive": False, "assertion_fail": False}
     with open(test_file, "r", encoding="utf-8") as open_file:
         contents = open_file.read()
         comment = contents.split('"')[1]
@@ -94,6 +94,20 @@ def parse_test_file(test_file):
                 if "custom_classpath" in line:
                     test_info_dict["customCP"] = line.split("custom_classpath:")[1].strip()
                     continue
+
+        # Check if we are case sensitive (has to be toggled on)
+        if "case_sensitive" in comment:
+            comment_lines = comment.split("\n")
+            for line in comment_lines:
+                if "case_sensitive" in line:
+                    test_info_dict["case_sensitive"] = bool(line.split("case_sensitive")[1].strip())
+
+        # Allow the assertion to fail expectedly
+        if "assertion_fail" in comment:
+            comment_lines = comment.split("\n")
+            for line in comment_lines:
+                if "assertion_fail" in line:
+                    test_info_dict["assertion_fail"] = bool(line.split("assertion_fail")[1].strip())
 
         if "stdout" in comment:
             std_out = comment.split("stdout:")[1]
@@ -115,11 +129,24 @@ def parse_test_file(test_file):
             std_err_l = [line.strip() for line in std_err_l if line.strip()]
             test_info_dict["stderr"] = std_err_l
 
+        if (test_info_dict["case_sensitive"]):
+            test_tuple = (
+                test_info_dict["name"],
+                test_info_dict["stdout"],
+                test_info_dict["stderr"],
+                test_info_dict["customCP"],
+                test_info_dict["case_sensitive"],
+                test_info_dict["assertion_fail"]
+            )
+            return test_tuple
+
         test_tuple = (
             test_info_dict["name"],
-            test_info_dict["stdout"],
-            test_info_dict["stderr"],
+            [s.lower() for s in test_info_dict["stdout"]],
+            [s.lower() for s in test_info_dict["stderr"]],
             test_info_dict["customCP"],
+            test_info_dict["case_sensitive"],
+            test_info_dict["assertion_fail"]
         )
 
     return test_tuple
@@ -230,11 +257,11 @@ TESTS_LIST = assemble_test_dictionary(testFiles)
 
 
 @pytest.mark.parametrize(
-    "name,stdout,stderr,custom_classpath",
+    "name,stdout,stderr,custom_classpath,case_sensitive,assertion_fail",
     TESTS_LIST,
     ids=[str(test_args[0]) for test_args in TESTS_LIST],
 )
-def tests_runner(name, stdout, stderr, custom_classpath):
+def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive, assertion_fail):
     """
     Take an array of dictionaries with test file names and expected output
     Run all of the tests and check the output
@@ -257,6 +284,10 @@ def tests_runner(name, stdout, stderr, custom_classpath):
     result = subprocess.run(
         command, capture_output=True, text=True, shell=True, check=False
     )
+    # lower-case comparisons unless specified otherwise
+    if (case_sensitive == False):
+        result.stdout = str(result.stdout).lower()
+        result.stderr = str(result.stderr).lower()
 
     # Produce potential error messages now and then run assertion
     error_message = f"""
@@ -266,6 +297,8 @@ Given stdout   : {result.stdout}
 Expected stderr: {stderr}
 Given stderr   : {result.stderr}
 Command used   : {command}
+Case sensitive : {case_sensitive}
+Assertion fail : {assertion_fail}
 """
 
     if result.returncode != 0:
@@ -278,7 +311,7 @@ Command used   : {command}
         str(name) in external_vars.known_failures and test_pass_bool
     ):  # Test passed when it is not expected tp
         external_vars.tests_passed_unexpectedly.append(name)
-        assert False, f"Test {name} is in known_failures but passed"
+        assert False, f"Test {name} is in known_failures but passed \n{error_message}"
     elif (
         str(name) in external_vars.known_failures and test_pass_bool is False
     ):  # Test failed as expected
@@ -288,7 +321,7 @@ Command used   : {command}
         str(name) in external_vars.failing_as_unspecified and test_pass_bool
     ):  # Test passed when it is not expected tp
         external_vars.tests_passed_unexpectedly.append(name)
-        assert False, f"Test {name} is in failing_as_unspecified but passed"
+        assert False, f"Test {name} is in failing_as_unspecified but passed \n{error_message}"
     elif (
         str(name) in external_vars.failing_as_unspecified and test_pass_bool is False
     ):  # Test failed as expected
@@ -298,11 +331,18 @@ Command used   : {command}
         str(name) in external_vars.unsupported and test_pass_bool
     ):  # Test passed when it is not expected tp
         external_vars.tests_passed_unexpectedly.append(name)
-        assert False, f"Test {name} is in unsupported but passed"
+        assert False, f"Test {name} is in unsupported but passed \n{error_message}"
     elif (
         str(name) in external_vars.unsupported and test_pass_bool is False
     ):  # Test failed as expected
         assert True
+
+    # Allows for testing of the test_runner itself
+    if assertion_fail and test_pass_bool is False:
+        assert True
+        return
+    elif assertion_fail and test_pass_bool:
+        assert False, f"Test {name} is supposed to fail \n{error_message}"
 
     if (
         str(name) not in external_vars.unsupported

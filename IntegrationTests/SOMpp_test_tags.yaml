@@ -28,7 +28,6 @@ known_failures:
   - core-lib/IntegrationTests/Tests/array_literals.som
   - core-lib/IntegrationTests/Tests/fromstring_double.som
   - core-lib/IntegrationTests/Tests/sin.som
-  - core-lib/IntegrationTests/Tests/double12.som
   - core-lib/IntegrationTests/Tests/double1.som
   - core-lib/IntegrationTests/Tests/int5.som
   - core-lib/IntegrationTests/Tests/nested_backtrace2.som
