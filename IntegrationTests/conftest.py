@@ -55,18 +55,19 @@ def pytest_sessionfinish(exitstatus):
         print("Generating report for the test run")
         os.makedirs(GENERATE_REPORT_LOCATION, exist_ok=True)
 
-        # To make the report useful it will add the tests which have failed unexpectedly to known_failures
+        # To make the report useful it will add the tests which have failed-
+        # -unexpectedly to known_failures
         # It will also remove those that have passed from any of those lists
 
-        for testPath in tests_passed_unexpectedly:
-            test = str(testPath)
+        for test_path in tests_passed_unexpectedly:
+            test = str(test_path)
             if test in known_failures:
                 known_failures.remove(test)
             if test in unsupported:
                 unsupported.remove(test)
             if test in failing_as_unspecified:
                 failing_as_unspecified.remove(test)
-        
+
         if len(tests_failed_unexpectedly) != 0:
             for test in tests_failed_unexpectedly:
                 known_failures.append(str(test))
@@ -79,25 +80,26 @@ def pytest_sessionfinish(exitstatus):
                 "tests_failed": tests_failed,
                 "tests_skipped": tests_skipped,
                 "pytest_exitstatus": exitstatus,
-                "note": "Totals include expected failures"
+                "note": "Totals include expected failures",
             },
             "unexpected": {
                 "passed": [str(test) for test in tests_passed_unexpectedly],
-                "failed": [str(test) for test in tests_failed_unexpectedly]
+                "failed": [str(test) for test in tests_failed_unexpectedly],
             },
             "environment": {
                 "executable": EXECUTABLE,
                 "classpath": CLASSPATH,
                 "test_exceptions": TEST_EXCEPTIONS,
                 "debug": DEBUG,
-                "generate_report_location": GENERATE_REPORT_LOCATION
+                "generate_report_location": GENERATE_REPORT_LOCATION,
             },
-            
             "known_failures": known_failures,
             "failing_as_unspecified": failing_as_unspecified,
             "unsupported": unsupported,
-            "do_not_run": do_not_run
+            "do_not_run": do_not_run,
         }
         print(f"Report location {GENERATE_REPORT_LOCATION}/report.txt")
-        with open(f"{GENERATE_REPORT_LOCATION}/report.yaml", "w", encoding="utf-8") as f:
+        with open(
+            f"{GENERATE_REPORT_LOCATION}/report.yaml", "w", encoding="utf-8"
+        ) as f:
             yaml.dump(report_data, f, default_flow_style=False, sort_keys=False)
