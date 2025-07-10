@@ -3,6 +3,7 @@ Defines variables that are required for a report to be generated.
 """
 
 import os
+import yaml
 
 # Report Generate Logic
 tests_failed_unexpectedly = []
@@ -54,44 +55,48 @@ def pytest_sessionfinish():
     if GENERATE_REPORT:
         os.makedirs(GENERATE_REPORT_LOCATION, exist_ok=True)
 
+        # To make the report useful it will add the tests which have failed unexpectedly to known_failures
+        # It will also remove those that have passed from any of those lists
+
+        for testPath in tests_passed_unexpectedly:
+            test = str(testPath)
+            if test in known_failures:
+                known_failures.remove(test)
+            if test in unsupported:
+                unsupported.remove(test)
+            if test in failing_as_unspecified:
+                failing_as_unspecified.remove(test)
+        
+        if len(tests_failed_unexpectedly) != 0:
+            for test in tests_failed_unexpectedly:
+                known_failures.append(str(test))
+
         # Generate a report_message to save
-        report_message = f"""
-Pytest Completed with {tests_passed}/{total_tests} passing:
-
-Test_total: {total_tests}  ** This includes those that we expect to fail **
-Tests_passed: {tests_passed} ** This includes those that we expect to fail **
-Tests_failed: {tests_failed}
-Tests_skipped: {tests_skipped}
-
-Tests that passed unexpectedly:
-{'\n'.join(f"{test}" for test in tests_passed_unexpectedly)}
-
-Tests that failed unexpectedly:
-{'\n'.join(f"{test}" for test in tests_failed_unexpectedly)}
-
-## ENVIRONMENT VARIABLES USED ##
-
-Executable: {EXECUTABLE}
-Classpath: {CLASSPATH}
-Test Exceptions: {TEST_EXCEPTIONS}
-Debug: {DEBUG}
-Generage Report: {GENERATE_REPORT_LOCATION}
-
-## TAGGED TESTS FILE ##
-
-Known_failures:
-{'\n'.join(f"{test}" for test in known_failures)}
-
-Failing_as_unspecified:
-{'\n'.join(f"{test}" for test in failing_as_unspecified)}
-
-Unsupported:
-{'\n'.join(f"{test}" for test in unsupported)}
-
-Do_not_run:
-{'\n'.join(f"{test}" for test in do_not_run)}
-"""
+        report_data = {
+            "summary": {
+                "tests_total": total_tests,
+                "tests_passed": tests_passed,
+                "tests_failed": tests_failed,
+                "tests_skipped": tests_skipped,
+                "note": "Totals include expected failures"
+            },
+            "unexpected": {
+                "passed": [str(test) for test in tests_passed_unexpectedly],
+                "failed": [str(test) for test in tests_failed_unexpectedly]
+            },
+            "environment": {
+                "executable": EXECUTABLE,
+                "classpath": CLASSPATH,
+                "test_exceptions": TEST_EXCEPTIONS,
+                "debug": DEBUG,
+                "generate_report_location": GENERATE_REPORT_LOCATION
+            },
+            
+            "known_failures": known_failures,
+            "failing_as_unspecified": failing_as_unspecified,
+            "unsupported": unsupported,
+            "do_not_run": do_not_run
+        }
         print(f"Report location {GENERATE_REPORT_LOCATION}/report.txt")
-        with open(f"{GENERATE_REPORT_LOCATION}/report.txt", "w", encoding="utf-8") as f:
-            f.write(report_message)
-            f.close()
+        with open(f"{GENERATE_REPORT_LOCATION}/report.yaml", "w", encoding="utf-8") as f:
+            yaml.dump(report_data, f, default_flow_style=False, sort_keys=False)
