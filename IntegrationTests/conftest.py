@@ -21,9 +21,8 @@ do_not_run = []
 # Environment variables
 CLASSPATH = ""
 EXECUTABLE = ""
-GENERATE_REPORT_LOCATION = ""
 TEST_EXCEPTIONS = ""
-GENERATE_REPORT = False
+GENERATE_REPORT = ""
 
 
 # Log data
@@ -87,13 +86,13 @@ def pytest_sessionfinish(exitstatus):
                 "executable": EXECUTABLE,
                 "classpath": CLASSPATH,
                 "test_exceptions": TEST_EXCEPTIONS,
-                "generate_report_location": GENERATE_REPORT_LOCATION,
+                "generate_report_location": GENERATE_REPORT,
             },
             "known_failures": known_failures,
             "failing_as_unspecified": failing_as_unspecified,
             "unsupported": unsupported,
             "do_not_run": do_not_run,
         }
-        print(f"Report location {GENERATE_REPORT_LOCATION}")
-        with open(f"{GENERATE_REPORT_LOCATION}", "w", encoding="utf-8") as f:
+        print(f"Report location {GENERATE_REPORT}")
+        with open(f"{GENERATE_REPORT}", "w", encoding="utf-8") as f:
             yaml.dump(report_data, f, default_flow_style=False, sort_keys=False)

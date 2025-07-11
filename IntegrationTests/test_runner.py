@@ -191,23 +191,10 @@ if "TEST_EXCEPTIONS" in os.environ:  # OPTIONAL
 if "GENERATE_REPORT" in os.environ:  # OPTIONAL
     # Value is the location
     # Its prescense in env variables signifies intent to save
-    external_vars.GENERATE_REPORT_LOCATION = os.environ["GENERATE_REPORT"]
-    external_vars.GENERATE_REPORT = True
+    external_vars.GENERATE_REPORT = os.environ["GENERATE_REPORT"]
 
 external_vars.CLASSPATH = os.environ["CLASSPATH"]
 external_vars.EXECUTABLE = os.environ["EXECUTABLE"]
-
-print(
-    f"""
-\n\nWelcome to SOM Integration Testing
-
-CLASSPATH is set to: {external_vars.CLASSPATH}
-EXECUTABLE is set to: {external_vars.EXECUTABLE}
-TEST_EXCEPTIONS is set to: {external_vars.TEST_EXCEPTIONS}
-GENERATE_REPORT is set to: {external_vars.GENERATE_REPORT}
-GENERATE_REPORT_LOCATION is set to: {external_vars.GENERATE_REPORT_LOCATION}
-"""
-)
 
 if external_vars.TEST_EXCEPTIONS:
     with open(f"{external_vars.TEST_EXCEPTIONS}", "r", encoding="utf-8") as file:
@@ -215,21 +202,29 @@ if external_vars.TEST_EXCEPTIONS:
 
         if "known_failures" in yamlFile.keys():
             external_vars.known_failures = yamlFile["known_failures"]
+            if external_vars.known_failures is None:
+                external_vars.known_failures = []
         else:
             external_vars.known_failures = []
 
         if "failing_as_unspecified" in yamlFile.keys():
             external_vars.failing_as_unspecified = yamlFile["failing_as_unspecified"]
+            if external_vars.failing_as_unspecified is None:
+                external_vars.failing_as_unspecified = []
         else:
             external_vars.failing_as_unspecified = []
 
         if "unsupported" in yamlFile.keys():
             external_vars.unsupported = yamlFile["unsupported"]
+            if external_vars.unsupported is None:
+                external_vars.unsupported = []
         else:
             external_vars.unsupported = []
 
         if "do_not_run" in yamlFile.keys():
             external_vars.do_not_run = yamlFile["do_not_run"]
+            if external_vars.do_not_run is None:
+                external_vars.do_not_run = []
         else:
             external_vars.do_not_run = []
 
