@@ -23,7 +23,7 @@ def locate_tests(path, test_files):
         with open(file_path, "r", encoding="utf-8") as f:
             contents = f.read()
             if "VM:" in contents:
-                test_files.append(file_path)
+                test_files.append(str(file_path))
 
     return test_files
 
@@ -292,12 +292,12 @@ Case sensitive : {case_sensitive}
 
     # Check if we have any unexpectedly passing tests
     if (
-        str(name) in external_vars.known_failures and test_pass_bool
+        name in external_vars.known_failures and test_pass_bool
     ):  # Test passed when it is not expected to
         external_vars.tests_passed_unexpectedly.append(name)
         assert False, f"Test {name} is in known_failures but passed \n{error_message}"
     elif (
-        str(name) in external_vars.known_failures and test_pass_bool is False
+        name in external_vars.known_failures and test_pass_bool is False
     ):  # Test failed as expected
         assert True
 
@@ -309,24 +309,24 @@ Case sensitive : {case_sensitive}
             False
         ), f"Test {name} is in failing_as_unspecified but passed \n{error_message}"
     elif (
-        str(name) in external_vars.failing_as_unspecified and test_pass_bool is False
+        name in external_vars.failing_as_unspecified and test_pass_bool is False
     ):  # Test failed as expected
         assert True
 
     if (
-        str(name) in external_vars.unsupported and test_pass_bool
+        name in external_vars.unsupported and test_pass_bool
     ):  # Test passed when it is not expected tp
         external_vars.tests_passed_unexpectedly.append(name)
         assert False, f"Test {name} is in unsupported but passed \n{error_message}"
     elif (
-        str(name) in external_vars.unsupported and test_pass_bool is False
+        name in external_vars.unsupported and test_pass_bool is False
     ):  # Test failed as expected
         assert True
 
     if (
-        str(name) not in external_vars.unsupported
-        and str(name) not in external_vars.known_failures
-        and str(name) not in external_vars.failing_as_unspecified
+        name not in external_vars.unsupported
+        and name not in external_vars.known_failures
+        and name not in external_vars.failing_as_unspecified
     ):
         if not test_pass_bool:
             external_vars.tests_failed_unexpectedly.append(name)
