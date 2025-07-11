@@ -5,6 +5,7 @@ this file and will find all .som test files in the below directories.
 
 import subprocess
 from pathlib import Path
+from difflib import ndiff
 import os
 import sys
 import pytest
@@ -232,6 +233,7 @@ if external_vars.TEST_EXCEPTIONS:
         else:
             external_vars.do_not_run = []
 
+
 def prepare_tests():
     """
     Prepare all of the tests and their relevent information into a dictionary
@@ -278,12 +280,24 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
     # Produce potential error messages now and then run assertion
     error_message = f"""
 Expected stdout: \n{"\n".join(f"{i + 1}|    {line}" for i, line in enumerate(stdout))}
-Given stdout   : \n{"\n".join(f"{i + 1}|    {line}" for i, line in enumerate(result.stdout.split("\n")))}
+Given stdout   : \n{"\n"
+                    .join(f"{i + 1}|    {line}" for i, line in enumerate(
+                        result.stdout.split("\n")))}
 Expected stderr: \n{"\n".join(f"{i + 1}|    {line}" for i, line in enumerate(stderr))}
-Given stderr   : \n{"\n".join(f"{i + 1}|    {line}" for i, line in enumerate(result.stderr.split("\n")))}
+Given stderr   : \n{"\n"
+                    .join(f"{i + 1}|    {line}" for i, line in enumerate(
+                        result.stderr.split("\n")))}
 Command used   : {command}
 Case sensitive : {case_sensitive}
+Stdout diff    : \n{''.join(ndiff("\n"
+                                  .join(stdout).splitlines(keepends=True),
+                                  result.stdout.splitlines(keepends=True)))}
+Stderr diff    : \n{''.join(ndiff("\n"
+                                  .join(stderr).splitlines(keepends=True),
+                                  result.stderr.splitlines(keepends=True)))}
 """
+    # Related to above line (Rather than change how stdout and stderr are
+    # represented just joining and then splitting again)
 
     if result.returncode != 0:
         error_message += f"Command failed with return code: {result.returncode}\n"
