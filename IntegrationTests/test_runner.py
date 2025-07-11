@@ -135,12 +135,12 @@ def parse_test_file(test_file):
     return test_tuple
 
 
-def check_out(test_outputs, expected_std_out, expected_std_err):
+def check_output(test_outputs, expected_std_out, expected_std_err):
     """
     check if the output of the test matches the expected output
-    result: The object returned by subprocess.run
-    expstd: The expected standard output
-    experr: The expected standard error output
+    test_outputs: The object returned by subprocess.run
+    expected_std_out: The expected standard output
+    expected_std_err: The expected standard error output
     Returns: Boolean indicating if result matches expected output
 
     note: This method does not directly error, just checks conditions
@@ -239,6 +239,7 @@ def prepare_tests():
     """
     test_files = []
     read_directory(location, test_files)
+    test_files = sorted(test_files)
     return collect_tests(test_files)
 
 
@@ -288,7 +289,7 @@ Case sensitive : {case_sensitive}
     if result.returncode != 0:
         error_message += f"Command failed with return code: {result.returncode}\n"
 
-    test_pass_bool = check_out(result, stdout, stderr)
+    test_pass_bool = check_output(result, stdout, stderr)
 
     # Check if we have any unexpectedly passing tests
     if (
