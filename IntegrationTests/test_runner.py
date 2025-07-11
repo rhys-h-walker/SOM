@@ -293,7 +293,7 @@ Case sensitive : {case_sensitive}
     # Check if we have any unexpectedly passing tests
     if (
         str(name) in external_vars.known_failures and test_pass_bool
-    ):  # Test passed when it is not expected tp
+    ):  # Test passed when it is not expected to
         external_vars.tests_passed_unexpectedly.append(name)
         assert False, f"Test {name} is in known_failures but passed \n{error_message}"
     elif (
