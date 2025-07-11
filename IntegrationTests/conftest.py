@@ -53,7 +53,6 @@ def pytest_sessionfinish(exitstatus):
     """
     if GENERATE_REPORT:
         print("Generating report for the test run")
-        os.makedirs(GENERATE_REPORT_LOCATION, exist_ok=True)
 
         # To make the report useful it will add the tests which have failed-
         # -unexpectedly to known_failures
@@ -98,8 +97,8 @@ def pytest_sessionfinish(exitstatus):
             "unsupported": unsupported,
             "do_not_run": do_not_run,
         }
-        print(f"Report location {GENERATE_REPORT_LOCATION}/report.txt")
+        print(f"Report location {GENERATE_REPORT_LOCATION}")
         with open(
-            f"{GENERATE_REPORT_LOCATION}/report.yaml", "w", encoding="utf-8"
+            f"{GENERATE_REPORT_LOCATION}", "w", encoding="utf-8"
         ) as f:
             yaml.dump(report_data, f, default_flow_style=False, sort_keys=False)
