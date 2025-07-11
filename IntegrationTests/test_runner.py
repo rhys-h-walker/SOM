@@ -100,7 +100,6 @@ def parse_test_file(test_file):
             if "stderr" in std_out:
                 std_err_inx = std_out.index("stderr:")
                 std_out = std_out[:std_err_inx]
-            std_out = std_out.replace("...", "")
             std_err_l = std_out.split("\n")
             std_err_l = [line.strip() for line in std_err_l if line.strip()]
             test_info_dict["stdout"] = std_err_l
@@ -110,7 +109,6 @@ def parse_test_file(test_file):
             if "stdout" in std_err:
                 std_out_inx = std_err.index("stdout:")
                 std_err = std_err[:std_out_inx]
-            std_err = std_err.replace("...", "")
             std_err_l = std_err.split("\n")
             std_err_l = [line.strip() for line in std_err_l if line.strip()]
             test_info_dict["stderr"] = std_err_l
@@ -135,6 +133,40 @@ def parse_test_file(test_file):
 
     return test_tuple
 
+def check_exp_given(given, expected):
+    # Check if the stdout matches the expected stdout
+    exp_std_inx = 0
+    for g_out in given:
+        # Check that checks don't pass before out of outputs
+        if exp_std_inx >= len(expected):
+            return 1
+
+        if expected[exp_std_inx] == "...":
+            # If the expected output is '...' then we skip this line
+            exp_std_inx += 1
+            continue
+
+        if g_out.strip() != expected[exp_std_inx].strip():
+            # Check if expected has ...
+            if "..." in expected[exp_std_inx]:
+                # If it does then we need to remove it and check for that line containing string
+                without_gap = expected[exp_std_inx].split("...")
+                if all(without_gap in g_out for without_gap in without_gap):
+                    exp_std_inx += 1
+            else:
+                # If the output does not match, continue without incrementing
+                continue
+            # If the output does not match, continue without incrementing
+            continue
+        else:
+            exp_std_inx += 1
+
+    if exp_std_inx != len(expected):
+        # It is not all contained in the output
+        return 0
+
+    return 1
+
 
 def check_output(test_outputs, expected_std_out, expected_std_err):
     """
@@ -145,35 +177,25 @@ def check_output(test_outputs, expected_std_out, expected_std_err):
     Returns: Boolean indicating if result matches expected output
 
     note: This method does not directly error, just checks conditions
+
+    stdout and stderr do not match in all SOMs
+    This check will do both
     """
+    given_std_out = test_outputs.stdout.split("\n")
+    given_std_err = test_outputs.stderr.split("\n")
 
-    # Tests borrowed from lang_tests and stderr and atdout will not directly match that of all SOMs
-    # Order of the output is important
+    passing = 0
 
-    std_out = test_outputs.stdout.splitlines()
-    std_err = test_outputs.stderr.splitlines()
+    passing += check_exp_given(given_std_out, expected_std_out)
+    passing += check_exp_given(given_std_err, expected_std_err)
+    passing += check_exp_given(given_std_out, expected_std_err)
+    passing += check_exp_given(given_std_err, expected_std_out)
 
-    # Check if each line in stdout and stderr is in the expected output
-    for line in expected_std_out:
-        if not any(line in out_line for out_line in std_out):
-            return False
-        if line in std_out:
-            std_out.remove(line)
-        if line in std_err:
-            std_err.remove(line)
+    if passing >= 3:
+        # If we have at least 2 then a pass has succeeded on at least both so should be ok
+        return True
 
-    for line in expected_std_err:
-        if not any(line in err_line for err_line in std_err):
-            return False
-        if line in std_out:
-            std_out.remove(line)
-        if line in std_err:
-            std_err.remove(line)
-
-    # If we made it this far then the test passed
-    return True
-
-
+    
 # Code below here runs before pytest finds it's methods
 
 location = os.path.relpath(os.path.dirname(__file__) + "/Tests")

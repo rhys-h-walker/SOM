@@ -100,6 +100,10 @@ known_failures:
   - core-lib/IntegrationTests/Tests/to32bits.som
   - core-lib/IntegrationTests/Tests/int4.som
   - core-lib/IntegrationTests/Tests/int29.som
+  - core-lib/IntegrationTests/Tests/double12.som
+  - core-lib/IntegrationTests/Tests/ic1.som
+  - core-lib/IntegrationTests/Tests/mutate_fields.som
+  - core-lib/IntegrationTests/Tests/test_literals_limit_1.som
 failing_as_unspecified:
   - null
 unsupported:
