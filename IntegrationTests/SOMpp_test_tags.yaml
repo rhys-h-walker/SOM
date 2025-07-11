@@ -104,9 +104,9 @@ known_failures:
   - core-lib/IntegrationTests/Tests/ic1.som
   - core-lib/IntegrationTests/Tests/mutate_fields.som
   - core-lib/IntegrationTests/Tests/test_literals_limit_1.som
+  - core-lib/IntegrationTests/Tests/substring.som
 failing_as_unspecified:
   - null
 unsupported:
   - null
 do_not_run:
-  - core-lib/IntegrationTests/Tests/substring.som
