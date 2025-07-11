@@ -49,8 +49,6 @@ def pytest_sessionfinish(exitstatus):
     Generate report based on test run
     """
     if GENERATE_REPORT:
-        print("Generating report for the test run")
-
         # To make the report useful it will add the tests which have failed-
         # -unexpectedly to known_failures
         # It will also remove those that have passed from any of those lists
@@ -93,6 +91,5 @@ def pytest_sessionfinish(exitstatus):
             "unsupported": unsupported,
             "do_not_run": do_not_run,
         }
-        print(f"Report location {GENERATE_REPORT}")
         with open(f"{GENERATE_REPORT}", "w", encoding="utf-8") as f:
             yaml.dump(report_data, f, default_flow_style=False, sort_keys=False)

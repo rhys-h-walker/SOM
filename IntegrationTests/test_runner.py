@@ -295,14 +295,11 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
     else:
         command = f"{external_vars.EXECUTABLE} -cp {external_vars.CLASSPATH} {name}"
 
-    print(f"Running test: {name}")
-
     try:
         result = subprocess.run(
             command, capture_output=True, text=True, shell=True, check=False
         )
     except UnicodeDecodeError as e:
-        print(f"Error decoding output for test {name}: {e}")
         pytest.skip(
             "Test output could not be decoded SOM may not support "
             "full Unicode. Result object not generated."
