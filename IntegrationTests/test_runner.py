@@ -43,7 +43,7 @@ def read_directory(path, test_files):
     locate_tests(path, test_files)
 
 
-def assemble_test_dictionary(test_files):
+def collect_tests(test_files):
     """
     Assemble a dictionary of
     name: the name of the test file
@@ -232,15 +232,20 @@ if external_vars.TEST_EXCEPTIONS:
         else:
             external_vars.do_not_run = []
 
-testFiles = []
-read_directory(location, testFiles)
-TESTS_LIST = assemble_test_dictionary(testFiles)
+def prepare_tests():
+    """
+    Prepare all of the tests and their relevent information into a dictionary
+    so that the test runner understands each test
+    """
+    test_files = []
+    read_directory(location, test_files)
+    return collect_tests(test_files)
 
 
 @pytest.mark.parametrize(
     "name,stdout,stderr,custom_classpath,case_sensitive",
-    TESTS_LIST,
-    ids=[str(test_args[0]) for test_args in TESTS_LIST],
+    prepare_tests(),
+    ids=[str(test_args[0]) for test_args in prepare_tests()],
 )
 # pylint: disable=too-many-branches
 def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
