@@ -12,23 +12,6 @@ import yaml
 import conftest as external_vars
 
 
-def debug(message):
-    """
-    Take a string as a mesasage and output if DEBUG is true
-    """
-    if external_vars.DEBUG is True:
-        print(message)
-
-
-def debug_list(message_list, prefix="", postfix=""):
-    """
-    Take a list of messages and output if DEBUG is true, with a prefix and a postfix
-    """
-    if external_vars.DEBUG is True:
-        for message in message_list:
-            print(prefix + str(message) + postfix)
-
-
 def locate_tests(path, test_files):
     """
     Locate all test files that exist in the given directory
@@ -196,9 +179,6 @@ def check_out(test_outputs, expected_std_out, expected_std_err):
 location = os.path.relpath(os.path.dirname(__file__) + "/Tests")
 
 # Work out settings for the application (They are labelled REQUIRED or OPTIONAL)
-if "DEBUG" in os.environ:  # OPTIONAL
-    external_vars.DEBUG = os.environ["DEBUG"].lower() == "true"
-
 if "CLASSPATH" not in os.environ:  # REQUIRED
     sys.exit("Please set the CLASSPATH environment variable")
 
@@ -217,10 +197,10 @@ if "GENERATE_REPORT" in os.environ:  # OPTIONAL
 external_vars.CLASSPATH = os.environ["CLASSPATH"]
 external_vars.EXECUTABLE = os.environ["EXECUTABLE"]
 
-debug(
+print(
     f"""
 \n\nWelcome to SOM Integration Testing
-\nDEBUG is set to: {external_vars.DEBUG}
+
 CLASSPATH is set to: {external_vars.CLASSPATH}
 EXECUTABLE is set to: {external_vars.EXECUTABLE}
 TEST_EXCEPTIONS is set to: {external_vars.TEST_EXCEPTIONS}
@@ -229,7 +209,6 @@ GENERATE_REPORT_LOCATION is set to: {external_vars.GENERATE_REPORT_LOCATION}
 """
 )
 
-debug("Opening test_tags")
 if external_vars.TEST_EXCEPTIONS:
     with open(f"{external_vars.TEST_EXCEPTIONS}", "r", encoding="utf-8") as file:
         yamlFile = yaml.safe_load(file)
@@ -238,19 +217,6 @@ if external_vars.TEST_EXCEPTIONS:
         external_vars.unsupported = yamlFile["unsupported"]
         # Tests here do not fail at a SOM level but at a python level
         external_vars.do_not_run = yamlFile["do_not_run"]
-
-debug_list(external_vars.known_failures, prefix="Failure expected from: ")
-debug_list(
-    external_vars.failing_as_unspecified,
-    prefix="Failure expected through undefined behaviour: ",
-)
-debug_list(
-    external_vars.unsupported, prefix="Test that fails through unsupported bahaviour: "
-)
-debug_list(
-    external_vars.do_not_run,
-    prefix="Test that will not run through python breaking logic: ",
-)
 
 testFiles = []
 read_directory(location, testFiles)
@@ -272,16 +238,14 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
 
     # Check if a test shoudld not be ran
     if str(name) in external_vars.do_not_run:
-        debug(f"Not running test {name}")
         pytest.skip("Test included in do_not_run")
 
     if custom_classpath != "NaN":
-        debug(f"Using custom classpath: {custom_classpath}")
         command = f"{external_vars.EXECUTABLE} -cp {custom_classpath} {name}"
     else:
         command = f"{external_vars.EXECUTABLE} -cp {external_vars.CLASSPATH} {name}"
 
-    debug(f"Running test: {name}")
+    print(f"Running test: {name}")
 
     result = subprocess.run(
         command, capture_output=True, text=True, shell=True, check=False

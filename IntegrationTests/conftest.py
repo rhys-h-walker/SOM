@@ -2,7 +2,6 @@
 Defines variables that are required for a report to be generated.
 """
 
-import os
 import yaml
 
 # Report Generate Logic
@@ -20,7 +19,6 @@ unsupported = []
 do_not_run = []
 
 # Environment variables
-DEBUG = False
 CLASSPATH = ""
 EXECUTABLE = ""
 GENERATE_REPORT_LOCATION = ""
@@ -89,7 +87,6 @@ def pytest_sessionfinish(exitstatus):
                 "executable": EXECUTABLE,
                 "classpath": CLASSPATH,
                 "test_exceptions": TEST_EXCEPTIONS,
-                "debug": DEBUG,
                 "generate_report_location": GENERATE_REPORT_LOCATION,
             },
             "known_failures": known_failures,
@@ -98,7 +95,5 @@ def pytest_sessionfinish(exitstatus):
             "do_not_run": do_not_run,
         }
         print(f"Report location {GENERATE_REPORT_LOCATION}")
-        with open(
-            f"{GENERATE_REPORT_LOCATION}", "w", encoding="utf-8"
-        ) as f:
+        with open(f"{GENERATE_REPORT_LOCATION}", "w", encoding="utf-8") as f:
             yaml.dump(report_data, f, default_flow_style=False, sort_keys=False)
