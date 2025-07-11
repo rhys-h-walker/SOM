@@ -14,16 +14,15 @@ import conftest as external_vars
 
 def locate_tests(path, test_files):
     """
-    Locate all test files that exist in the given directory
-    Ignore any tests which are in the ignoredTests directory
-    Return a list of paths to the test files
+    Locate all tests which are in the current directory.
+    Add them to the list test_files and return
+    A check if made on if the file has VM: in it's content
     """
     # To ID a file will be opened and at the top there should be a comment which starts with VM:
     for file_path in Path(path).glob("*.som"):
-        # Check if the file is in the ignored tests (Check via path, multiple tests named test.som)
         with open(file_path, "r", encoding="utf-8") as f:
             contents = f.read()
-            if "VM" in contents:
+            if "VM:" in contents:
                 test_files.append(file_path)
 
     return test_files
@@ -33,7 +32,7 @@ def read_directory(path, test_files):
     """
     Recursively read all sub directories
     Path is the directory we are currently in
-    testFiles is the list of test files we are building up
+    test_files is the list of test files we are building up
     """
     for directory in Path(path).iterdir():
         if directory.is_dir():
@@ -68,7 +67,7 @@ def parse_test_file(test_file):
         "name": test_file,
         "stdout": [],
         "stderr": [],
-        "customCP": "NaN",
+        "custom_classpath": "None",
         "case_sensitive": False,
     }
     with open(test_file, "r", encoding="utf-8") as open_file:
@@ -81,9 +80,9 @@ def parse_test_file(test_file):
             comment_lines = comment.split("\n")
             for line in comment_lines:
                 if "custom_classpath" in line:
-                    test_info_dict["customCP"] = line.split("custom_classpath:")[
-                        1
-                    ].strip()
+                    test_info_dict["custom_classpath"] = line.split(
+                        "custom_classpath:"
+                    )[1].strip()
                     continue
 
         # Check if we are case sensitive (has to be toggled on)
@@ -120,7 +119,7 @@ def parse_test_file(test_file):
                 test_info_dict["name"],
                 test_info_dict["stdout"],
                 test_info_dict["stderr"],
-                test_info_dict["customCP"],
+                test_info_dict["custom_classpath"],
                 test_info_dict["case_sensitive"],
             )
             return test_tuple
@@ -129,7 +128,7 @@ def parse_test_file(test_file):
             test_info_dict["name"],
             [s.lower() for s in test_info_dict["stdout"]],
             [s.lower() for s in test_info_dict["stderr"]],
-            test_info_dict["customCP"],
+            test_info_dict["custom_classpath"],
             test_info_dict["case_sensitive"],
         )
 
@@ -212,11 +211,26 @@ GENERATE_REPORT_LOCATION is set to: {external_vars.GENERATE_REPORT_LOCATION}
 if external_vars.TEST_EXCEPTIONS:
     with open(f"{external_vars.TEST_EXCEPTIONS}", "r", encoding="utf-8") as file:
         yamlFile = yaml.safe_load(file)
-        external_vars.known_failures = yamlFile["known_failures"]
-        external_vars.failing_as_unspecified = yamlFile["failing_as_unspecified"]
-        external_vars.unsupported = yamlFile["unsupported"]
-        # Tests here do not fail at a SOM level but at a python level
-        external_vars.do_not_run = yamlFile["do_not_run"]
+
+        if "known_failures" in yamlFile.keys():
+            external_vars.known_failures = yamlFile["known_failures"]
+        else:
+            external_vars.known_failures = []
+
+        if "failing_as_unspecified" in yamlFile.keys():
+            external_vars.failing_as_unspecified = yamlFile["failing_as_unspecified"]
+        else:
+            external_vars.failing_as_unspecified = []
+
+        if "unsupported" in yamlFile.keys():
+            external_vars.unsupported = yamlFile["unsupported"]
+        else:
+            external_vars.unsupported = []
+
+        if "do_not_run" in yamlFile.keys():
+            external_vars.do_not_run = yamlFile["do_not_run"]
+        else:
+            external_vars.do_not_run = []
 
 testFiles = []
 read_directory(location, testFiles)
@@ -240,7 +254,7 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
     if str(name) in external_vars.do_not_run:
         pytest.skip("Test included in do_not_run")
 
-    if custom_classpath != "NaN":
+    if custom_classpath != "None":
         command = f"{external_vars.EXECUTABLE} -cp {custom_classpath} {name}"
     else:
         command = f"{external_vars.EXECUTABLE} -cp {external_vars.CLASSPATH} {name}"
