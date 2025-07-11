@@ -277,10 +277,10 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
 
     # Produce potential error messages now and then run assertion
     error_message = f"""
-Expected stdout: \n{"\n".join(stdout)}
-Given stdout   : \n{result.stdout}
-Expected stderr: \n{"\n".join(stderr)}
-Given stderr   : \n{result.stderr}
+Expected stdout: \n{"\n".join(f"{i + 1}|    {line}" for i, line in enumerate(stdout))}
+Given stdout   : \n{"\n".join(f"{i + 1}|    {line}" for i, line in enumerate(result.stdout.split("\n")))}
+Expected stderr: \n{"\n".join(f"{i + 1}|    {line}" for i, line in enumerate(stderr))}
+Given stderr   : \n{"\n".join(f"{i + 1}|    {line}" for i, line in enumerate(result.stderr.split("\n")))}
 Command used   : {command}
 Case sensitive : {case_sensitive}
 """
