@@ -133,7 +133,16 @@ def parse_test_file(test_file):
 
     return test_tuple
 
+
 def check_exp_given(given, expected):
+    """
+    Check if the expected output is contained in the given output
+
+    given: list of strings representing some kind of SOM output
+    expected: list of strings representing the expected output
+
+    return: 1 if success 0 if failure
+    """
     # Check if the stdout matches the expected stdout
     exp_std_inx = 0
     for g_out in given:
@@ -153,13 +162,10 @@ def check_exp_given(given, expected):
                 without_gap = expected[exp_std_inx].split("...")
                 if all(without_gap in g_out for without_gap in without_gap):
                     exp_std_inx += 1
-            else:
-                # If the output does not match, continue without incrementing
-                continue
             # If the output does not match, continue without incrementing
             continue
-        else:
-            exp_std_inx += 1
+
+        exp_std_inx += 1
 
     if exp_std_inx != len(expected):
         # It is not all contained in the output
@@ -179,7 +185,10 @@ def check_output(test_outputs, expected_std_out, expected_std_err):
     note: This method does not directly error, just checks conditions
 
     stdout and stderr do not match in all SOMs
-    This check will do both
+    stderr checked against stdout and stderr
+    stdout checked against stdout and stderr
+
+    This is relatively robust for most test cases
     """
     given_std_out = test_outputs.stdout.split("\n")
     given_std_err = test_outputs.stderr.split("\n")
@@ -195,7 +204,9 @@ def check_output(test_outputs, expected_std_out, expected_std_err):
         # If we have at least 2 then a pass has succeeded on at least both so should be ok
         return True
 
-    
+    return False
+
+
 # Code below here runs before pytest finds it's methods
 
 location = os.path.relpath(os.path.dirname(__file__) + "/Tests")
