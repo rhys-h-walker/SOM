@@ -296,10 +296,6 @@ Case sensitive : {case_sensitive}
     ):  # Test passed when it is not expected to
         external_vars.tests_passed_unexpectedly.append(name)
         assert False, f"Test {name} is in known_failures but passed \n{error_message}"
-    elif (
-        name in external_vars.known_failures and test_pass_bool is False
-    ):  # Test failed as expected
-        assert True
 
     if (
         str(name) in external_vars.failing_as_unspecified and test_pass_bool
@@ -308,20 +304,12 @@ Case sensitive : {case_sensitive}
         assert (
             False
         ), f"Test {name} is in failing_as_unspecified but passed \n{error_message}"
-    elif (
-        name in external_vars.failing_as_unspecified and test_pass_bool is False
-    ):  # Test failed as expected
-        assert True
 
     if (
         name in external_vars.unsupported and test_pass_bool
     ):  # Test passed when it is not expected tp
         external_vars.tests_passed_unexpectedly.append(name)
         assert False, f"Test {name} is in unsupported but passed \n{error_message}"
-    elif (
-        name in external_vars.unsupported and test_pass_bool is False
-    ):  # Test failed as expected
-        assert True
 
     if (
         name not in external_vars.unsupported
