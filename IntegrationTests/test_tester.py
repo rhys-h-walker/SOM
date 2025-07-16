@@ -17,7 +17,7 @@ import conftest as external_vars
 def test_parse_file():
     """
     Test that the test_runner can parse a file correctly.
-    Expected output should be lower case
+    Expected output should be lower-case
     """
 
     # EXAMPLE TUPLE
@@ -210,10 +210,10 @@ def test_different_yaml():
     Or be malformed
     """
 
-    # First save the variables that will change in external_vars
+    # First, save the variables that will change in external_vars
     temp_known = external_vars.known_failures
     temp_unspecified = external_vars.failing_as_unspecified
-    temp_unsuported = external_vars.unsupported
+    temp_unsupported = external_vars.unsupported
     temp_do_not_run = external_vars.do_not_run
 
     yaml_for_testing_location = os.path.relpath(
@@ -285,5 +285,5 @@ def test_different_yaml():
     # Reset external vars after test
     external_vars.known_failures = temp_known
     external_vars.failing_as_unspecified = temp_unspecified
-    external_vars.unsupported = temp_unsuported
+    external_vars.unsupported = temp_unsupported
     external_vars.do_not_run = temp_do_not_run

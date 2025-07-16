@@ -7,7 +7,6 @@ import subprocess
 from pathlib import Path
 from difflib import ndiff
 import os
-import sys
 import pytest
 import yaml
 import conftest as external_vars
@@ -290,7 +289,7 @@ def read_test_exceptions(filename):
     """
     Read a TEST_EXCEPTIONS file and extract the core information
     Filename should be either a relative path from CWD to file
-    or an abolute path.
+    or an absolute path.
     """
     if filename:
         path = os.path.relpath(os.path.dirname(__file__))
