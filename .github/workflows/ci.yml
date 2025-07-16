@@ -18,7 +18,7 @@ jobs:
       - name: Run Black Check
         run: |
           black ./IntegrationTests --check --diff
-      
+
       - name: Run PyLint
         run: |
           pylint ./IntegrationTests/test_runner.py ./IntegrationTests/conftest.py
@@ -186,14 +186,15 @@ jobs:
 
           echo "${{ matrix.som }} $SOM_TESTS"
           eval "${{ matrix.som }} $SOM_TESTS"
-      
+
       - name: Run Integration Tests
         if: ${{ matrix.som != 'spec' }}
         run: |
           python -m pip install --upgrade pip
           pip install pytest
-          export EXECUTABLE="som-vm/${{ matrix.som }}"
+          export VM="som-vm/${{ matrix.som }}"
           export CLASSPATH=Smalltalk
+          export TEST_EXCEPTIONS=som-vm/integration-tests.yml
           pytest IntegrationTests
 
       # We currently test SomSom only on TruffleSOM
