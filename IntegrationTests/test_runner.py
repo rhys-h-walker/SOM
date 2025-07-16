@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring
 """
 This is the SOM integration test runner file. Pytest automatically discovers
 this file and will find all .som test files in the below directories.
@@ -329,40 +330,31 @@ def read_test_exceptions(filename):
             ]
 
 
-# START, ENTRY, BEGIN, MAIN
-# Code below here runs before pytest finds it's methods
-location = os.path.relpath(os.path.dirname(__file__))
-if not os.path.exists(location + "/Tests"):
-    pytest.exit(
-        "/Tests directory not found. Please make sure the lang_tests are installed"
-    )
-
-# Work out settings for the application (They are labelled REQUIRED or OPTIONAL)
-if "CLASSPATH" not in os.environ:  # REQUIRED
-    sys.exit("Please set the CLASSPATH environment variable")
-
-if "VM" not in os.environ:  # REQUIRED
-    sys.exit("Please set the VM environment variable")
-
-if "TEST_EXCEPTIONS" in os.environ:  # OPTIONAL
-    external_vars.TEST_EXCEPTIONS = location + "/" + os.environ["TEST_EXCEPTIONS"]
-
-if "GENERATE_REPORT" in os.environ:  # OPTIONAL
-    # Value is the location
-    # Its prescense in env variables signifies intent to save
-    external_vars.GENERATE_REPORT = os.environ["GENERATE_REPORT"]
-
-external_vars.CLASSPATH = os.environ["CLASSPATH"]
-external_vars.VM = os.environ["VM"]
-
-read_test_exceptions(external_vars.TEST_EXCEPTIONS)
-
-
 def prepare_tests():
-    """
-    Prepare all of the tests and their relevent information into a dictionary
-    so that the test runner understands each test
-    """
+    location = os.path.relpath(os.path.dirname(__file__))
+    if not os.path.exists(location + "/Tests"):
+        pytest.fail(
+            "`Tests` directory not found. Please make sure the lang_tests are installed"
+        )
+
+    # Work out settings for the application (They are labelled REQUIRED or OPTIONAL)
+    if "CLASSPATH" not in os.environ:  # REQUIRED
+        pytest.fail("Please set the CLASSPATH environment variable")
+
+    if "VM" not in os.environ:  # REQUIRED
+        pytest.fail("Please set the VM environment variable")
+
+    if "TEST_EXCEPTIONS" in os.environ:  # OPTIONAL
+        external_vars.TEST_EXCEPTIONS = location + "/" + os.environ["TEST_EXCEPTIONS"]
+
+    if "GENERATE_REPORT" in os.environ:  # OPTIONAL
+        external_vars.GENERATE_REPORT = os.environ["GENERATE_REPORT"]
+
+    external_vars.CLASSPATH = os.environ["CLASSPATH"]
+    external_vars.VM = os.environ["VM"]
+
+    read_test_exceptions(external_vars.TEST_EXCEPTIONS)
+
     test_files = []
     read_directory(location + "/Tests", test_files)
     test_files = sorted(test_files)
