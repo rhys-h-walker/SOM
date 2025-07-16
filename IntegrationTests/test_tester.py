@@ -174,33 +174,34 @@ And a little more here
     expected = ["...", "Really***LongWord"]
 
     stdout = "Some output, as an example\nExtra Line\nReallyLongWord"
-    assert (
-        check_exp_given(stdout.split("\n"), expected)
+    assert check_exp_given(
+        stdout.split("\n"), expected
     ), "Evaluation should've been successfull"
     stdout = "Some output, as an example\nExtra Line\nReally"
-    assert (
-        check_exp_given(stdout.split("\n"), expected)
+    assert check_exp_given(
+        stdout.split("\n"), expected
     ), "Evaluation should've been successfull"
     stdout = "Some output, as an example\nExtra Line\nReallyLong"
-    assert (
-        check_exp_given(stdout.split("\n"), expected)
+    assert check_exp_given(
+        stdout.split("\n"), expected
     ), "Evaluation should've been successfull"
     stdout = "Some output, as an example\nExtra Line\nReallyLo"
-    assert (
-        check_exp_given(stdout.split("\n"), expected)
+    assert check_exp_given(
+        stdout.split("\n"), expected
     ), "Evaluation should've been successfull"
 
     # Now assert some failures to test when it should fail
     stdout = "Some output, as an example\nExtra Line\nReallyLongTestFunction"
-    assert (
-        not check_exp_given(stdout.split("\n"), expected)
+    assert not check_exp_given(
+        stdout.split("\n"), expected
     ), "Evaluation should've been successfull"
 
     # This one should fail as there is still more word than expected
     stdout = "Some output, as an example\nExtra Line\nReallyLongWordExtra"
-    assert (
-        not check_exp_given(stdout.split("\n"), expected)
+    assert not check_exp_given(
+        stdout.split("\n"), expected
     ), "Evaluation should've been successfull"
+
 
 @pytest.mark.tester
 def test_different_yaml():
