@@ -219,6 +219,9 @@ def test_different_yaml():
     yaml_for_testing_location = os.path.relpath(
         os.path.dirname(__file__) + "/test_runner_tests/yaml_for_testing"
     )
+    full_path_from_CWD = os.path.relpath(
+        os.path.dirname(__file__)
+    )
 
     # Read a yaml file with nothing after tag (Should all be empty lists)
     read_test_exceptions(yaml_for_testing_location + "/missing_known_declaration.yaml")
@@ -252,7 +255,7 @@ def test_different_yaml():
     # Read a yaml file where each tag has one test included
     # [core-lib/IntegrationTests/Tests/mutate_superclass_method/test.som]
     read_test_exceptions(yaml_for_testing_location + "/tests_in_each.yaml")
-    test_list = ["./Tests/mutate_superclass_method/test.som"]
+    test_list = [f"{str(full_path_from_CWD)}/Tests/mutate_superclass_method/test.som"]
     assert external_vars.known_failures == test_list
     assert external_vars.failing_as_unspecified == test_list
     assert external_vars.unsupported == test_list
