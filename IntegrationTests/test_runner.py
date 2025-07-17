@@ -307,6 +307,8 @@ def read_test_exceptions(filename):
             external_vars.do_not_run = yaml_file.get("do_not_run", []) or []
 
             path = os.path.relpath(os.path.dirname(__file__))
+            if path == ".":
+                path = ""
 
             external_vars.known_failures = [
                 os.path.join(path, test)
@@ -328,7 +330,6 @@ def read_test_exceptions(filename):
                 for test in external_vars.do_not_run
                 if test is not None
             ]
-
 
 def prepare_tests():
     location = os.path.relpath(os.path.dirname(__file__))
