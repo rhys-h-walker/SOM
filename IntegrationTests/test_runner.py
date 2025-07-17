@@ -109,8 +109,7 @@ def parse_test_file(test_file):
                             classpath_joined += os.environ[classpath_t]
 
                         test_info_dict["custom_classpath"] = classpath_joined
-                        
-                    
+
                     continue
 
         # Check if we are case sensitive (has to be toggled on)
@@ -358,6 +357,7 @@ def read_test_exceptions(filename):
                 if test is not None
             ]
 
+
 def prepare_tests():
     location = os.path.relpath(os.path.dirname(__file__))
     if not os.path.exists(location + "/Tests"):
@@ -388,6 +388,7 @@ def prepare_tests():
     test_files = sorted(test_files)
     return collect_tests(test_files)
 
+
 def assign_ids(tests):
     """
     Assign test IDs the same way as the names are treated
@@ -395,13 +396,15 @@ def assign_ids(tests):
     test_ids = []
     for test in tests:
         test_name = test[0]
-        test_t = "Tests/"+test_name.split("Tests/")[-1]
+        test_t = "Tests/" + test_name.split("Tests/")[-1]
         test_ids.append(test_t)
 
     return test_ids
 
+
 # Stops prepare_tests() being called twice
 TEST_FILES = prepare_tests()
+
 
 @pytest.mark.parametrize(
     "name,stdout,stderr,custom_classpath,case_sensitive",
