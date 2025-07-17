@@ -84,6 +84,33 @@ def parse_test_file(test_file):
                     test_info_dict["custom_classpath"] = line.split(
                         "custom_classpath:"
                     )[1].strip()
+
+                    classpath_t = test_info_dict["custom_classpath"]
+
+                    # Now check our custom classpath for any tags
+                    # Tags are defined as @tag in the classpath
+                    # Will then assign the EXACT value of the
+                    # Environment variable to that spot
+
+                    if "@" in classpath_t:
+
+                        classpath_joined = ""
+                        # Does the classpath have a splitter ":"
+                        if ":" in classpath_t:
+                            split_list = classpath_t.split(":")
+                            for tag in split_list:
+                                if "@" in tag:
+                                    tag = tag.replace("@", "")
+                                    classpath_joined += os.environ[tag] + ":"
+                                    continue
+                                classpath_joined += tag + ":"
+                        else:
+                            classpath_t = classpath_t.replace("@", "")
+                            classpath_joined += os.environ[classpath_t]
+
+                        test_info_dict["custom_classpath"] = classpath_joined
+                        
+                    
                     continue
 
         # Check if we are case sensitive (has to be toggled on)
