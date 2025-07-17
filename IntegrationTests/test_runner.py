@@ -388,11 +388,25 @@ def prepare_tests():
     test_files = sorted(test_files)
     return collect_tests(test_files)
 
+def assign_ids(tests):
+    """
+    Assign test IDs the same way as the names are treated
+    """
+    test_ids = []
+    for test in tests:
+        test_name = test[0]
+        test_t = "Tests/"+test_name.split("Tests/")[-1]
+        test_ids.append(test_t)
+
+    return test_ids
+
+# Stops prepare_tests() being called twice
+TEST_FILES = prepare_tests()
 
 @pytest.mark.parametrize(
     "name,stdout,stderr,custom_classpath,case_sensitive",
-    prepare_tests(),
-    ids=[str(test_args[0]) for test_args in prepare_tests()],
+    TEST_FILES,
+    ids=assign_ids(TEST_FILES),
 )
 # pylint: disable=too-many-branches
 def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
