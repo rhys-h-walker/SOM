@@ -346,7 +346,7 @@ def prepare_tests():
         pytest.fail("Please set the VM environment variable")
 
     if "TEST_EXCEPTIONS" in os.environ:  # OPTIONAL
-        external_vars.TEST_EXCEPTIONS = location + "/" + os.environ["TEST_EXCEPTIONS"]
+        external_vars.TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
 
     if "GENERATE_REPORT" in os.environ:  # OPTIONAL
         external_vars.GENERATE_REPORT = os.environ["GENERATE_REPORT"]
