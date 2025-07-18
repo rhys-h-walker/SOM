@@ -66,85 +66,67 @@ def test_check_partial_word_does_not_match(word):
     assert not check_partial_word(word, "1.111111111***1111111111")
 
 
-@pytest.mark.tester
-def test_parse_file():
-    """
-    Test that the test_runner can parse a file correctly.
-    Expected output should be lower-case
-    """
-
-    # EXAMPLE TUPLE
-    # 0. test_info_dict["name"],
-    # 1. test_info_dict["stdout"],
-    # 2. test_info_dict["stderr"],
-    # 3. test_info_dict["custom_classpath"],
-    # 4. test_info_dict["case_sensitive"],
-
-    soms_for_testing_location = os.path.relpath(
+@pytest.fixture
+def soms_for_testing_location():
+    return os.path.relpath(
         os.path.dirname(__file__) + "/test_runner_tests/soms_for_testing"
     )
 
-    # Firstly assign what is expected from parsing som_test_1.som
-    exp_stdout = ["1", "2", "3", "4", "5", "...", "10"]
-    exp_stderr = ["this is an error", "...", "hello, world"]
-    custom_classpath = None
-    case_sensitive = False
 
-    # Parse test and assert values are as above
-    result_tuple = parse_test_file(soms_for_testing_location + "/som_test_1.som")
-    assert result_tuple[1] == exp_stdout
-    assert result_tuple[2] == exp_stderr
-    assert result_tuple[3] is custom_classpath
-    assert result_tuple[4] is case_sensitive
-
-    # Firstly assign what is expected from parsing som_test_2.som
-    exp_stdout = ["I AM cAsE sensitiVe", "...", "Dots/inTest"]
-    exp_stderr = ["CaSE sensitive ErrOr", "...", "TestCaseSensitivity"]
-    custom_classpath = None
-    case_sensitive = True
-
-    # Parse test and assert values are as above
-    result_tuple = parse_test_file(soms_for_testing_location + "/som_test_2.som")
-    assert result_tuple[1] == exp_stdout
-    assert result_tuple[2] == exp_stderr
-    assert result_tuple[3] is custom_classpath
-    assert result_tuple[4] is case_sensitive
-
-    # Firstly assign what is expected from parsing som_test_3.som
-    exp_stdout = ["..."]
-    exp_stderr = ["..."]
-    custom_classpath = "core-lib/AreWeFastYet/Core"
-    case_sensitive = False
-
-    # Parse test and assert values are as above
-    result_tuple = parse_test_file(soms_for_testing_location + "/som_test_3.som")
+@pytest.mark.parametrize(
+    "test_file, exp_stdout, exp_stderr, custom_classpath, case_sensitive",
+    [
+        (
+            "/som_test_1.som",
+            ["1", "2", "3", "4", "5", "...", "10"],
+            ["this is an error", "...", "hello, world"],
+            None,
+            False,
+        ),
+        (
+            "/som_test_2.som",
+            ["I AM cAsE sensitiVe", "...", "Dots/inTest"],
+            ["CaSE sensitive ErrOr", "...", "TestCaseSensitivity"],
+            None,
+            True,
+        ),
+        ("/som_test_3.som", ["..."], ["..."], "core-lib/AreWeFastYet/Core", False),
+    ],
+)
+@pytest.mark.tester
+def test_parse_file(
+    test_file,
+    exp_stdout,
+    exp_stderr,
+    custom_classpath,
+    case_sensitive,
+    soms_for_testing_location,
+):
+    result_tuple = parse_test_file(soms_for_testing_location + test_file)
     assert result_tuple[1] == exp_stdout
     assert result_tuple[2] == exp_stderr
     assert result_tuple[3] == custom_classpath
     assert result_tuple[4] is case_sensitive
 
-    # Now test the ability to parse a test file which contains a
-    # @tag classpath object som_test_4.som
+
+@pytest.mark.tester
+def test_parse_file_correctly_using_envvars(soms_for_testing_location):
     custom_classpath = "core-lib/AreWeFastYet/Core:experiments/Classpath:anotherOne"
     os.environ["AWFYtest"] = "core-lib/AreWeFastYet/Core"
     os.environ["experimental"] = "experiments/Classpath"
     os.environ["oneWord"] = "anotherOne"
 
     result_tuple = parse_test_file(soms_for_testing_location + "/som_test_4.som")
-    assert result_tuple[1] == exp_stdout
-    assert result_tuple[2] == exp_stderr
     assert result_tuple[3] == custom_classpath
-    assert result_tuple[4] is case_sensitive
 
     # Now test the ability to interleave regular classpaths
     custom_classpath = "one/the/outside:core-lib/AreWeFastYet/Core:then/another/one"
     result_tuple = parse_test_file(soms_for_testing_location + "/som_test_5.som")
-    assert result_tuple[1] == exp_stdout
-    assert result_tuple[2] == exp_stderr
     assert result_tuple[3] == custom_classpath
-    assert result_tuple[4] is case_sensitive
 
-    # Now assert a failure on a classpath envvar that hasnt been set
+
+@pytest.mark.tester
+def test_parse_file_failing_because_of_envvar_not_being_set(soms_for_testing_location):
     with pytest.raises(Failed, match=r"Environment variable IDontExist not set"):
         parse_test_file(soms_for_testing_location + "/som_test_6.som")
 
