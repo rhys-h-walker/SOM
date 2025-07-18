@@ -458,7 +458,7 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
     Cleanup the build directory if required
     """
 
-    # Check if a test shoudld not be ran
+    # Check if a test should not be ran
     if str(name) in external_vars.do_not_run:
         pytest.skip("Test included in do_not_run")
 
