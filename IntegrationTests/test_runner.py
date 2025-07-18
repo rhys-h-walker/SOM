@@ -91,9 +91,11 @@ def parse_custom_classpath(comment):
                             tag = tag.replace("@", "")
                             if tag in os.environ:
                                 classpath_joined += os.environ[tag] + ":"
-                                classpath_joined += tag + ":"
                                 continue
                             pytest.fail(f"Environment variable {tag} not set")
+                        # Add a normal classpath inside of tags
+                        classpath_joined += tag + ":"
+
                 else:
                     classpath_t = classpath_t.replace("@", "")
                     if classpath_t in os.environ:
@@ -101,7 +103,8 @@ def parse_custom_classpath(comment):
                     else:
                         pytest.fail(f"Environment variable {classpath_t} should be set")
 
-                classpath = classpath_joined
+                # Remove the final ":"
+                classpath = classpath_joined[:-1]
 
             return classpath
     return None

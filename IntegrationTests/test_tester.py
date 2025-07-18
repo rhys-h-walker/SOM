@@ -5,6 +5,8 @@ Tests that will check if the test_runner is wokring ok
 
 import os
 import pytest
+from _pytest.outcomes import Failed
+
 from test_runner import (
     parse_test_file,
     read_directory,
@@ -71,6 +73,30 @@ def test_parse_file():
     assert result_tuple[3] == custom_classpath
     assert result_tuple[4] is case_sensitive
 
+    # Now test the ability to parse a test file which contains a
+    # @tag classpath object som_test_4.som
+    custom_classpath = "core-lib/AreWeFastYet/Core:experiments/Classpath:anotherOne"
+    os.environ["AWFYtest"] = "core-lib/AreWeFastYet/Core"
+    os.environ["experimental"] = "experiments/Classpath"
+    os.environ["oneWord"] = "anotherOne"
+
+    result_tuple = parse_test_file(soms_for_testing_location + "/som_test_4.som")
+    assert result_tuple[1] == exp_stdout
+    assert result_tuple[2] == exp_stderr
+    assert result_tuple[3] == custom_classpath
+    assert result_tuple[4] is case_sensitive
+
+    # Now test the ability to interleave regular classpaths
+    custom_classpath = "one/the/outside:core-lib/AreWeFastYet/Core:then/another/one"
+    result_tuple = parse_test_file(soms_for_testing_location + "/som_test_5.som")
+    assert result_tuple[1] == exp_stdout
+    assert result_tuple[2] == exp_stderr
+    assert result_tuple[3] == custom_classpath
+    assert result_tuple[4] is case_sensitive
+
+    # Now assert a failure on a classpath envvar that hasnt been set
+    with pytest.raises(Failed, match=r"Environment variable IDontExist should be set"):
+        parse_test_file(soms_for_testing_location + "/som_test_6.som")
 
 @pytest.mark.tester
 def test_test_discovery():
@@ -90,6 +116,9 @@ def test_test_discovery():
         f"{str(test_runner_tests_location)}/soms_for_testing/som_test_1.som",
         f"{str(test_runner_tests_location)}/soms_for_testing/som_test_2.som",
         f"{str(test_runner_tests_location)}/soms_for_testing/som_test_3.som",
+        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_4.som",
+        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_5.som",
+        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_6.som",
     ]
 
     assert tests == expected_tests
@@ -189,6 +218,8 @@ def test_different_yaml():
         os.path.dirname(__file__) + "/test_runner_tests/yaml_for_testing"
     )
     full_path_from_cwd = os.path.relpath(os.path.dirname(__file__))
+    if full_path_from_cwd == ".":
+        full_path_from_cwd = ""
 
     # Read a yaml file with nothing after tag (Should all be empty lists)
     read_test_exceptions(yaml_for_testing_location + "/missing_known_declaration.yaml")
@@ -214,7 +245,7 @@ def test_different_yaml():
     # Read a yaml file where each tag has one test included
     # [core-lib/IntegrationTests/Tests/mutate_superclass_method/test.som]
     read_test_exceptions(yaml_for_testing_location + "/tests_in_each.yaml")
-    test_list = [f"{str(full_path_from_cwd)}/Tests/mutate_superclass_method/test.som"]
+    test_list = [f"{str(full_path_from_cwd)}Tests/mutate_superclass_method/test.som"]
     assert external_vars.known_failures == test_list
     assert external_vars.failing_as_unspecified == test_list
     assert external_vars.unsupported == test_list
