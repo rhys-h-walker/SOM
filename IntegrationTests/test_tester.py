@@ -9,7 +9,7 @@ from _pytest.outcomes import Failed
 
 from test_runner import (
     parse_test_file,
-    read_directory,
+    discover_test_files,
     check_exp_given,
     read_test_exceptions,
     check_partial_word,
@@ -132,27 +132,18 @@ def test_parse_file_failing_because_of_envvar_not_being_set(soms_for_testing_loc
 
 
 @pytest.mark.tester
-def test_test_discovery():
-    """
-    Test the som test discovery methods in the test_runner_tests directory
-    Three tests should be located, Update this method if more tests are added
-    """
-    # Locate all SOM tests
+def test_discover_test_files():
     test_runner_tests_location = os.path.relpath(
         os.path.dirname(__file__) + "/test_runner_tests"
     )
     tests = []
-    read_directory(test_runner_tests_location, tests)
+    discover_test_files(test_runner_tests_location, tests)
     tests = sorted(tests)
 
-    # If a new tests is added to soms_for_testing then please add it here
     expected_tests = [
-        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_1.som",
-        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_2.som",
-        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_3.som",
-        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_4.som",
-        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_5.som",
-        f"{str(test_runner_tests_location)}/soms_for_testing/som_test_6.som",
+        f"{test_runner_tests_location}/soms_for_testing/som_test_{i}.som"
+        # add missing tests here, or make the test independent of the actual test files
+        for i in range(1, 7)
     ]
 
     assert tests == expected_tests

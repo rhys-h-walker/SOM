@@ -29,7 +29,7 @@ def locate_tests(path, test_files):
     return test_files
 
 
-def read_directory(path, test_files):
+def discover_test_files(path, test_files):
     """
     Recursively read all sub directories
     Path is the directory we are currently in
@@ -37,7 +37,7 @@ def read_directory(path, test_files):
     """
     for directory in Path(path).iterdir():
         if directory.is_dir():
-            read_directory(directory, test_files)
+            discover_test_files(directory, test_files)
         else:
             continue
 
@@ -423,7 +423,7 @@ def prepare_tests():
     read_test_exceptions(external_vars.TEST_EXCEPTIONS)
 
     test_files = []
-    read_directory(location + "/Tests", test_files)
+    discover_test_files(location + "/Tests", test_files)
     test_files = sorted(test_files)
     return collect_tests(test_files)
 
