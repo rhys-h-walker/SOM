@@ -12,9 +12,43 @@ from test_runner import (
     read_directory,
     check_exp_given,
     read_test_exceptions,
+    check_partial_word,
 )
 import conftest as external_vars
 
+@pytest.mark.tester
+def test_check_partial_word():
+    """
+    Test whether checking a partial word works correctly
+    """
+
+    expected = "1.111111111***1111111111"
+    assert not check_partial_word("", expected)
+    assert not check_partial_word("1", expected)
+    assert not check_partial_word("1.", expected)
+    assert not check_partial_word("1.1", expected)
+    assert not check_partial_word("1.11", expected)
+    assert not check_partial_word("1.111", expected)
+    assert not check_partial_word("1.1111", expected)
+    assert not check_partial_word("1.11111", expected)
+    assert not check_partial_word("1.111111", expected)
+    assert not check_partial_word("1.1111111", expected)
+    assert not check_partial_word("1.11111111", expected)
+    assert check_partial_word("1.111111111", expected)
+    assert check_partial_word("1.1111111111", expected)
+    assert not check_partial_word("1.1111111112", expected)
+    assert check_partial_word("1.11111111111", expected)
+    assert check_partial_word("1.111111111111", expected)
+    assert check_partial_word("1.1111111111111", expected)
+    assert check_partial_word("1.11111111111111", expected)
+    assert check_partial_word("1.111111111111111", expected)
+    assert not check_partial_word("1.211111111111111", expected)
+    assert check_partial_word("1.1111111111111111", expected)
+    assert check_partial_word("1.11111111111111111", expected)
+    assert check_partial_word("1.111111111111111111", expected)
+    assert check_partial_word("1.1111111111111111111", expected)
+    assert not check_partial_word("1.11111111111111111111", expected)
+    assert not check_partial_word("1.11111111111111111112", expected)
 
 @pytest.mark.tester
 def test_parse_file():
@@ -112,6 +146,7 @@ def test_test_discovery():
     read_directory(test_runner_tests_location, tests)
     tests = sorted(tests)
 
+    # If a new tests is added to soms_for_testing then please add it here
     expected_tests = [
         f"{str(test_runner_tests_location)}/soms_for_testing/som_test_1.som",
         f"{str(test_runner_tests_location)}/soms_for_testing/som_test_2.som",
