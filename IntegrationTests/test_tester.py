@@ -1,4 +1,4 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring,redefined-outer-name
 """
 Tests for the tester functionality itself.
 """
@@ -94,7 +94,7 @@ def soms_for_testing_location():
     ],
 )
 @pytest.mark.tester
-def test_parse_file(
+def test_parse_file(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     test_file,
     exp_stdout,
     exp_stderr,
