@@ -93,7 +93,9 @@ def pytest_sessionfinish(exitstatus):
         if len(tests_failed_unexpectedly) != 0:
             for test in tests_failed_unexpectedly:
                 # Remove the part of the path that is incompatible with multiple directory running
-                known_failures.append("Tests/" + str(test).split("Tests/")[-1])
+                known_failures.append(
+                    "Tests/" + str(test).rsplit("Tests/", maxsplit=1)[-1]
+                )
 
         # Generate a report_message to save
         report_data = {
@@ -107,11 +109,11 @@ def pytest_sessionfinish(exitstatus):
             },
             "unexpected": {
                 "passed": [
-                    "Tests/" + str(test).split("Tests/")[-1]
+                    "Tests/" + str(test).rsplit("Tests/", maxsplit=1)[-1]
                     for test in tests_passed_unexpectedly
                 ],
                 "failed": [
-                    "Tests/" + str(test).split("Tests/")[-1]
+                    "Tests/" + str(test).rsplit("Tests/", maxsplit=1)[-1]
                     for test in tests_failed_unexpectedly
                 ],
             },

@@ -101,7 +101,7 @@ def parse_custom_classpath(comment):
                     if classpath_t in os.environ:
                         classpath_joined += os.environ[classpath_t]
                     else:
-                        pytest.fail(f"Environment variable {classpath_t} should be set")
+                        pytest.fail(f"Environment variable {classpath_t} not set")
 
                 # Remove the final ":"
                 classpath = classpath_joined[:-1]

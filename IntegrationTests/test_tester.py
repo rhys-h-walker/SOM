@@ -13,6 +13,10 @@ from test_runner import (
     check_exp_given,
     read_test_exceptions,
     check_partial_word,
+    parse_custom_classpath,
+    parse_case_sensitive,
+    parse_stdout,
+    parse_stderr,
 )
 import conftest as external_vars
 
@@ -131,7 +135,7 @@ def test_parse_file():
     assert result_tuple[4] is case_sensitive
 
     # Now assert a failure on a classpath envvar that hasnt been set
-    with pytest.raises(Failed, match=r"Environment variable IDontExist should be set"):
+    with pytest.raises(Failed, match=r"Environment variable IDontExist not set"):
         parse_test_file(soms_for_testing_location + "/som_test_6.som")
 
 
@@ -294,3 +298,117 @@ def test_different_yaml():
     external_vars.failing_as_unspecified = temp_unspecified
     external_vars.unsupported = temp_unsupported
     external_vars.do_not_run = temp_do_not_run
+
+
+# ######################################### #
+# ALL TEST BELOW HERE SHARE THESE COMMENTS  #
+# ######################################### #
+
+COMMENT_TESTERS = """
+VM:
+    status: success
+    case_sensitive: True
+    custom_classpath: @custom_1:./some/other/one:@custom_2
+    stdout:
+        Some random output
+        ... some other output
+        even more output ...
+        ...
+        the last bit std
+    stderr:
+        Some random error
+        ... some other error
+        even more error ...
+        ...
+        the last bit of error
+"""
+
+# Causes fail on parse_custom_classpath
+# False in case_sensitive
+COMMENT_TESTERS_2 = """
+VM:
+    status: success
+    case_sensitive: False
+    custom_classpath: @no_exist_1:./some/other/one:@no_exist_2
+    stdout:
+        ...
+    stderr:
+        ...
+"""
+
+
+@pytest.mark.tester
+def test_custom_classpath():
+    """
+    Test parsing a custom_classpath
+    """
+    os.environ["custom_1"] = "classpath_1"
+    os.environ["custom_2"] = "classpath_2"
+
+    expected = "classpath_1:./some/other/one:classpath_2"
+
+    assert expected == parse_custom_classpath(COMMENT_TESTERS)
+
+    # Now assert a failure on a classpath envvar that hasnt been set
+    with pytest.raises(Failed, match=r"Environment variable no_exist_1 not set"):
+        parse_custom_classpath(COMMENT_TESTERS_2)
+
+    os.environ["no_exist_1"] = "exists_1"
+
+    # Now assert we fail on the second
+    with pytest.raises(Failed, match=r"Environment variable no_exist_2 not set"):
+        parse_custom_classpath(COMMENT_TESTERS_2)
+
+    os.environ["no_exist_2"] = "exists_2"
+
+    # Now we should pass
+    expected = "exists_1:./some/other/one:exists_2"
+    assert expected == parse_custom_classpath(COMMENT_TESTERS_2)
+
+
+@pytest.mark.tester
+def test_case_sensitive():
+    """
+    Test that parsing case_sensitive generates the correct values
+    """
+    assert parse_case_sensitive(COMMENT_TESTERS)
+    assert not parse_case_sensitive(COMMENT_TESTERS_2)
+
+
+# THESE BELOW MUST BE DIFFERENT EVEN THOUGH THE FUNCTIONS DO ESSENTIALLY THE SAME THING
+
+
+@pytest.mark.tester
+def test_parse_stdout():
+    """
+    Check that parsing the test comment generates the correct output
+    """
+    comment_testers_expected_1 = [
+        "Some random output",
+        "... some other output",
+        "even more output ...",
+        "...",
+        "the last bit std",
+    ]
+    comment_testers_expected_2 = ["..."]
+
+    assert comment_testers_expected_1 == parse_stdout(COMMENT_TESTERS)
+    assert comment_testers_expected_2 == parse_stdout(COMMENT_TESTERS_2)
+
+
+@pytest.mark.tester
+def test_parse_stderr():
+    """
+    Check that parsing the test comment generates the correct output
+    """
+    comment_testers_expected_1 = [
+        "Some random error",
+        "... some other error",
+        "even more error ...",
+        "...",
+        "the last bit of error",
+    ]
+    comment_testers_expected_2 = ["..."]
+
+    assert comment_testers_expected_1 == parse_stderr(COMMENT_TESTERS)
+    assert comment_testers_expected_2 == parse_stderr(COMMENT_TESTERS_2)
