@@ -16,6 +16,7 @@ from test_runner import (
 )
 import conftest as external_vars
 
+
 @pytest.mark.tester
 def test_check_partial_word():
     """
@@ -49,6 +50,7 @@ def test_check_partial_word():
     assert check_partial_word("1.1111111111111111111", expected)
     assert not check_partial_word("1.11111111111111111111", expected)
     assert not check_partial_word("1.11111111111111111112", expected)
+
 
 @pytest.mark.tester
 def test_parse_file():
@@ -131,6 +133,7 @@ def test_parse_file():
     # Now assert a failure on a classpath envvar that hasnt been set
     with pytest.raises(Failed, match=r"Environment variable IDontExist should be set"):
         parse_test_file(soms_for_testing_location + "/som_test_6.som")
+
 
 @pytest.mark.tester
 def test_test_discovery():
