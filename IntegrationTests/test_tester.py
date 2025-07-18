@@ -1,6 +1,6 @@
 # pylint: disable=missing-function-docstring
 """
-Tests that will check if the test_runner is wokring ok
+Tests for the tester functionality itself.
 """
 
 import os
@@ -21,39 +21,49 @@ from test_runner import (
 import conftest as external_vars
 
 
+@pytest.mark.parametrize(
+    "word",
+    [
+        "1.111111111",
+        "1.1111111111",
+        "1.11111111111",
+        "1.1111111111111",
+        "1.11111111111111",
+        "1.111111111111111",
+        "1.1111111111111111",
+        "1.11111111111111111",
+        "1.111111111111111111",
+        "1.1111111111111111111",
+    ],
+)
 @pytest.mark.tester
-def test_check_partial_word():
-    """
-    Test whether checking a partial word works correctly
-    """
+def test_check_partial_word_matches(word):
+    assert check_partial_word(word, "1.111111111***1111111111")
 
-    expected = "1.111111111***1111111111"
-    assert not check_partial_word("", expected)
-    assert not check_partial_word("1", expected)
-    assert not check_partial_word("1.", expected)
-    assert not check_partial_word("1.1", expected)
-    assert not check_partial_word("1.11", expected)
-    assert not check_partial_word("1.111", expected)
-    assert not check_partial_word("1.1111", expected)
-    assert not check_partial_word("1.11111", expected)
-    assert not check_partial_word("1.111111", expected)
-    assert not check_partial_word("1.1111111", expected)
-    assert not check_partial_word("1.11111111", expected)
-    assert check_partial_word("1.111111111", expected)
-    assert check_partial_word("1.1111111111", expected)
-    assert not check_partial_word("1.1111111112", expected)
-    assert check_partial_word("1.11111111111", expected)
-    assert check_partial_word("1.111111111111", expected)
-    assert check_partial_word("1.1111111111111", expected)
-    assert check_partial_word("1.11111111111111", expected)
-    assert check_partial_word("1.111111111111111", expected)
-    assert not check_partial_word("1.211111111111111", expected)
-    assert check_partial_word("1.1111111111111111", expected)
-    assert check_partial_word("1.11111111111111111", expected)
-    assert check_partial_word("1.111111111111111111", expected)
-    assert check_partial_word("1.1111111111111111111", expected)
-    assert not check_partial_word("1.11111111111111111111", expected)
-    assert not check_partial_word("1.11111111111111111112", expected)
+
+@pytest.mark.parametrize(
+    "word",
+    [
+        "",
+        "1",
+        "1.",
+        "1.1",
+        "1.11",
+        "1.111",
+        "1.1111",
+        "1.11111",
+        "1.111111",
+        "1.1111111",
+        "1.11111111",
+        "1.1111111112",
+        "1.211111111111111",
+        "1.11111111111111111111",
+        "1.11111111111111111112",
+    ],
+)
+@pytest.mark.tester
+def test_check_partial_word_does_not_match(word):
+    assert not check_partial_word(word, "1.111111111***1111111111")
 
 
 @pytest.mark.tester
