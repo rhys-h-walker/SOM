@@ -60,6 +60,91 @@ def collect_tests(test_files):
     return tests
 
 
+# pylint: disable=too-many-nested-blocks
+def parse_custom_classpath(comment):
+    """
+    Based on the comment will calculate the custom_classpath
+    for the current test
+
+    Return: The custom classpath
+    """
+    comment_lines = comment.split("\n")
+    for line in comment_lines:
+        if "custom_classpath" in line:
+            classpath = line.split("custom_classpath:")[1].strip()
+
+            classpath_t = classpath
+
+            # Now check our custom classpath for any tags
+            # Tags are defined as @tag in the classpath
+            # Will then assign the EXACT value of the
+            # Environment variable to that spot
+
+            if classpath_t.find("@") >= 0:
+
+                classpath_joined = ""
+                # Does the classpath have a splitter ":"
+                if ":" in classpath_t:
+                    split_list = classpath_t.split(":")
+                    for tag in split_list:
+                        if tag.find("@") >= 0:
+                            tag = tag.replace("@", "")
+                            if tag in os.environ:
+                                classpath_joined += os.environ[tag] + ":"
+                                classpath_joined += tag + ":"
+                                continue
+                            pytest.fail(f"Environment variable {tag} not set")
+                else:
+                    classpath_t = classpath_t.replace("@", "")
+                    if classpath_t in os.environ:
+                        classpath_joined += os.environ[classpath_t]
+                    else:
+                        pytest.fail(f"Environment variable {classpath_t} should be set")
+
+                classpath = classpath_joined
+
+            return classpath
+    return None
+
+
+def parse_case_sensitive(comment):
+    """
+    Based on a comment decide whether a case_sensitive is requried
+    """
+    comment_lines = comment.split("\n")
+    for line in comment_lines:
+        if "case_sensitive" in line:
+            return bool(line.split("case_sensitive:")[1].strip().lower() == "true")
+
+    return False
+
+
+def parse_stdout(comment):
+    """
+    Based on a comment parse the expected stdout
+    """
+    std_out = comment.split("stdout:")[1]
+    if "stderr" in std_out:
+        std_err_inx = std_out.index("stderr:")
+        std_out = std_out[:std_err_inx]
+    std_err_l = std_out.split("\n")
+    std_err_l = [line.strip() for line in std_err_l if line.strip()]
+    return std_err_l
+
+
+def parse_stderr(comment):
+    """
+    Based on a comment parse the expected stderr
+    """
+    std_err = comment.split("stderr:")[1]
+    if "stdout" in std_err:
+        std_out_inx = std_err.index("stdout:")
+        std_err = std_err[:std_out_inx]
+    std_err_l = std_err.split("\n")
+    std_err_l = [line.strip() for line in std_err_l if line.strip()]
+    return std_err_l
+
+
 def parse_test_file(test_file):
     """
     parse the test file to extract the important information
@@ -78,66 +163,17 @@ def parse_test_file(test_file):
         # Make sure if using a custom test classpath that it is above
         # Stdout and Stderr
         if "custom_classpath" in comment:
-            comment_lines = comment.split("\n")
-            for line in comment_lines:
-                if "custom_classpath" in line:
-                    test_info_dict["custom_classpath"] = line.split(
-                        "custom_classpath:"
-                    )[1].strip()
-
-                    classpath_t = test_info_dict["custom_classpath"]
-
-                    # Now check our custom classpath for any tags
-                    # Tags are defined as @tag in the classpath
-                    # Will then assign the EXACT value of the
-                    # Environment variable to that spot
-
-                    if "@" in classpath_t:
-
-                        classpath_joined = ""
-                        # Does the classpath have a splitter ":"
-                        if ":" in classpath_t:
-                            split_list = classpath_t.split(":")
-                            for tag in split_list:
-                                if "@" in tag:
-                                    tag = tag.replace("@", "")
-                                    classpath_joined += os.environ[tag] + ":"
-                                    continue
-                                classpath_joined += tag + ":"
-                        else:
-                            classpath_t = classpath_t.replace("@", "")
-                            classpath_joined += os.environ[classpath_t]
-
-                        test_info_dict["custom_classpath"] = classpath_joined
-
-                    continue
+            test_info_dict["custom_classpath"] = parse_custom_classpath(comment)
 
         # Check if we are case sensitive (has to be toggled on)
         if "case_sensitive" in comment:
-            comment_lines = comment.split("\n")
-            for line in comment_lines:
-                if "case_sensitive" in line:
-                    test_info_dict["case_sensitive"] = bool(
-                        line.split("case_sensitive:")[1].strip().lower() == "true"
-                    )
+            test_info_dict["case_sensitive"] = parse_case_sensitive(comment)
 
         if "stdout" in comment:
-            std_out = comment.split("stdout:")[1]
-            if "stderr" in std_out:
-                std_err_inx = std_out.index("stderr:")
-                std_out = std_out[:std_err_inx]
-            std_err_l = std_out.split("\n")
-            std_err_l = [line.strip() for line in std_err_l if line.strip()]
-            test_info_dict["stdout"] = std_err_l
+            test_info_dict["stdout"] = parse_stdout(comment)
 
         if "stderr" in comment:
-            std_err = comment.split("stderr:")[1]
-            if "stdout" in std_err:
-                std_out_inx = std_err.index("stdout:")
-                std_err = std_err[:std_out_inx]
-            std_err_l = std_err.split("\n")
-            std_err_l = [line.strip() for line in std_err_l if line.strip()]
-            test_info_dict["stderr"] = std_err_l
+            test_info_dict["stderr"] = parse_stderr(comment)
 
         if test_info_dict["case_sensitive"]:
             test_tuple = (
