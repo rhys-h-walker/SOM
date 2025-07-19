@@ -141,13 +141,12 @@ def parse_test_file(test_file):
     """
     parse the test file to extract the important information
     """
-    test_info_dict = {
-        "name": test_file,
-        "stdout": [],
-        "stderr": [],
-        "custom_classpath": None,
-        "case_sensitive": False,
-    }
+    name = test_file
+    stdout = []
+    stderr = []
+    custom_classpath = None
+    case_sensitive = False
+
     with open(test_file, "r", encoding="utf-8") as open_file:
         contents = open_file.read()
         comment = contents.split('"')[1]
@@ -155,37 +154,22 @@ def parse_test_file(test_file):
         # Make sure if using a custom test classpath that it is above
         # Stdout and Stderr
         if "custom_classpath" in comment:
-            test_info_dict["custom_classpath"] = parse_custom_classpath(comment)
+            custom_classpath = parse_custom_classpath(comment)
 
-        # Check if we are case sensitive (has to be toggled on)
         if "case_sensitive" in comment:
-            test_info_dict["case_sensitive"] = parse_case_sensitive(comment)
+            case_sensitive = parse_case_sensitive(comment)
 
         if "stdout" in comment:
-            test_info_dict["stdout"] = parse_stdout(comment)
+            stdout = parse_stdout(comment)
 
         if "stderr" in comment:
-            test_info_dict["stderr"] = parse_stderr(comment)
+            stderr = parse_stderr(comment)
 
-        if test_info_dict["case_sensitive"]:
-            test_tuple = (
-                test_info_dict["name"],
-                test_info_dict["stdout"],
-                test_info_dict["stderr"],
-                test_info_dict["custom_classpath"],
-                test_info_dict["case_sensitive"],
-            )
-            return test_tuple
+        if not case_sensitive:
+            stdout = [s.lower() for s in stdout]
+            stderr = [s.lower() for s in stderr]
 
-        test_tuple = (
-            test_info_dict["name"],
-            [s.lower() for s in test_info_dict["stdout"]],
-            [s.lower() for s in test_info_dict["stderr"]],
-            test_info_dict["custom_classpath"],
-            test_info_dict["case_sensitive"],
-        )
-
-    return test_tuple
+    return name, stdout, stderr, custom_classpath, case_sensitive
 
 
 def make_a_diff(expected, given):
