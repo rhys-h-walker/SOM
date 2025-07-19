@@ -13,35 +13,24 @@ import yaml
 import conftest as external_vars
 
 
-def locate_tests(path, test_files):
-    """
-    Locate all tests which are in the current directory.
-    Add them to the list test_files and return
-    A check if made on if the file has VM: in it's content
-    """
-    # To ID a file will be opened and at the top there should be a comment which starts with VM:
-    for file_path in Path(path).glob("*.som"):
-        with open(file_path, "r", encoding="utf-8") as f:
+def is_som_test(path):
+    if path.suffix == ".som":
+        with open(path, "r", encoding="utf-8") as f:
             contents = f.read()
             if "VM:" in contents:
-                test_files.append(str(file_path))
-
-    return test_files
+                return True
+    return False
 
 
 def discover_test_files(path, test_files):
     """
-    Recursively read all sub directories
-    Path is the directory we are currently in
-    test_files is the list of test files we are building up
+    Recursively read the directory tree and add all .som test files to `test_files`.
     """
-    for directory in Path(path).iterdir():
-        if directory.is_dir():
-            discover_test_files(directory, test_files)
-        else:
-            continue
-
-    locate_tests(path, test_files)
+    for element in Path(path).iterdir():
+        if element.is_dir():
+            discover_test_files(element, test_files)
+        elif element.is_file() and is_som_test(element):
+            test_files.append(str(element))
 
 
 def collect_tests(test_files):
