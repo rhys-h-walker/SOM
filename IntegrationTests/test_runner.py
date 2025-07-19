@@ -268,21 +268,19 @@ def check_partial_word(word, exp_word):
     return True
 
 
-def check_exp_given(given, expected):
+def check_output_matches(given, expected):
     """
     Check if the expected output is contained in the given output
 
-    given: list of strings representing some kind of SOM output
+    given: list of strings representing the actual output
     expected: list of strings representing the expected output
-
-    return: 1 if success 0 if failure
     """
     # Check if the stdout matches the expected stdout
     exp_std_inx = 0
     for g_out in given:
         # Check that checks don't pass before out of outputs
         if exp_std_inx >= len(expected):
-            return 1
+            return True
 
         if expected[exp_std_inx] == "...":
             # If the expected output is '...' then we skip this line
@@ -293,7 +291,7 @@ def check_exp_given(given, expected):
         if "***" in expected[exp_std_inx]:
             # Now do some partial checking
             partial_output = check_partial_word(g_out, expected[exp_std_inx])
-            if partial_output is True:
+            if partial_output:
                 exp_std_inx += 1
             continue
 
@@ -313,9 +311,9 @@ def check_exp_given(given, expected):
 
     if exp_std_inx != len(expected):
         # It is not all contained in the output
-        return 0
+        return False
 
-    return 1
+    return True
 
 
 def check_output(test_outputs, expected_std_out, expected_std_err):
@@ -337,16 +335,9 @@ def check_output(test_outputs, expected_std_out, expected_std_err):
     given_std_out = test_outputs.stdout.split("\n")
     given_std_err = test_outputs.stderr.split("\n")
 
-    passing = 0
-
-    passing += check_exp_given(given_std_out, expected_std_out)
-    passing += check_exp_given(given_std_err, expected_std_err)
-
-    if passing == 2:
-        # If we have two passing then we know we have what we expect
-        return True
-
-    return False
+    return check_output_matches(
+        given_std_out, expected_std_out
+    ) and check_output_matches(given_std_err, expected_std_err)
 
 
 # Read the test exceptions file and set the variables correctly

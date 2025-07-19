@@ -10,7 +10,7 @@ from _pytest.outcomes import Failed
 from test_runner import (
     parse_test_file,
     discover_test_files,
-    check_exp_given,
+    check_output_matches,
     read_test_exceptions,
     check_partial_word,
     parse_custom_classpath,
@@ -149,27 +149,15 @@ def test_discover_test_files():
     assert tests == expected_tests
 
 
-@pytest.mark.tester
-def test_check_output():
-    """
-    Test that the check_output function complies with the expected output.
-    """
-
-    stdout = "Hello World\nSome other output in the Middle\nThis is a test\n"
-
-    expected_stdout = ["hello world", "...", "this is a test"]
-
-    # For checking case sensitivity all are converted to lower at differnt parts of the program
-    # This just simulates that. It is very difficult to actually run this
-
-    # Check case sensitive
-    assert check_exp_given(stdout.split("\n"), expected_stdout) == 0
-
-    # Check case insensitive
-    assert check_exp_given(stdout.lower().split("\n"), expected_stdout) == 1
-
-    # Check large output file with ... used inline at beginning and at end
-    stdout = """This is SOM++
+@pytest.mark.parametrize(
+    "out, expected",
+    [
+        (
+            "Hello World\nSome other output in the Middle\nThis is a test\n".lower(),
+            ["hello world", "...", "this is a test"],
+        ),
+        (
+            """This is SOM++
 Hello Rhys this is some sample output
 1\n2\n3\n4\n4\n56\n6\n7\n7\n8\n9\n9
 1010101\n10101\n1010101
@@ -179,51 +167,70 @@ Moving on
 Extra text
 more Numbers
 NUMBER NUMBER NUMBER NUMBER
-"""
-    expected_stdout = [
-        "Hello ... this is ... sample output",
-        "Rhys Walker",
-        "... on",
-        "more ...",
-        "... NUMBER ... NUMBER",
-    ]
-
-    assert check_exp_given(stdout.split("\n"), expected_stdout) == 1
-
-    stdout = """This is SOM++
+""",
+            [
+                "Hello ... this is ... sample output",
+                "Rhys Walker",
+                "... on",
+                "more ...",
+                "... NUMBER ... NUMBER",
+            ],
+        ),
+        (
+            """This is SOM++
 Hello, this is some sample output
 There is some more on this line
 And a little more here
-"""
-    expected_stdout = [
-        "Hello, ... sample ...",
-        "... is ... this line",
-        "... little ...",
-    ]
+""",
+            [
+                "Hello, ... sample ...",
+                "... is ... this line",
+                "... little ...",
+            ],
+        ),
+        (
+            "Some output, as an example\nExtra Line\nReallyLongWord",
+            ["...", "Really***LongWord"],
+        ),
+        (
+            "Some output, as an example\nExtra Line\nReally",
+            ["...", "Really***LongWord"],
+        ),
+        (
+            "Some output, as an example\nExtra Line\nReallyLong",
+            ["...", "Really***LongWord"],
+        ),
+        (
+            "Some output, as an example\nExtra Line\nReallyLo",
+            ["...", "Really***LongWord"],
+        ),
+    ],
+)
+@pytest.mark.tester
+def test_check_output_matches(out, expected):
+    assert check_output_matches(out.split("\n"), expected)
 
-    assert check_exp_given(stdout.split("\n"), expected_stdout) == 1
 
-    expected = ["...", "Really***LongWord"]
-
-    stdout = "Some output, as an example\nExtra Line\nReallyLongWord"
-    assert check_exp_given(stdout.split("\n"), expected)
-
-    stdout = "Some output, as an example\nExtra Line\nReally"
-    assert check_exp_given(stdout.split("\n"), expected)
-
-    stdout = "Some output, as an example\nExtra Line\nReallyLong"
-    assert check_exp_given(stdout.split("\n"), expected)
-
-    stdout = "Some output, as an example\nExtra Line\nReallyLo"
-    assert check_exp_given(stdout.split("\n"), expected)
-
-    # Now assert some failures to test when it should fail
-    stdout = "Some output, as an example\nExtra Line\nReallyLongTestFunction"
-    assert not check_exp_given(stdout.split("\n"), expected)
-
-    # This one should fail as there is still more word than expected
-    stdout = "Some output, as an example\nExtra Line\nReallyLongWordExtra"
-    assert not check_exp_given(stdout.split("\n"), expected)
+@pytest.mark.parametrize(
+    "out, expected",
+    [
+        (
+            "Hello World\nSome other output in the Middle\nThis is a test\n",
+            ["hello world", "...", "this is a test"],
+        ),
+        (
+            "Some output, as an example\nExtra Line\nReallyLongTestFunction",
+            ["...", "Really***LongWord"],
+        ),
+        (
+            "Some output, as an example\nExtra Line\nReallyLongWordExtra",
+            ["...", "Really***LongWord"],
+        ),
+    ],
+)
+@pytest.mark.tester
+def test_check_output_does_not_match(out, expected):
+    assert not check_output_matches(out.split("\n"), expected)
 
 
 @pytest.mark.tester
