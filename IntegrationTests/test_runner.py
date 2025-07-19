@@ -1,4 +1,4 @@
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring, missing-class-docstring, too-many-arguments, too-many-positional-arguments, too-few-public-methods
 """
 This is the SOM integration test runner file. Pytest automatically discovers
 this file and will find all .som test files in the below directories.
@@ -11,6 +11,35 @@ import os
 import pytest
 import yaml
 import conftest as external_vars
+
+
+class Definition:
+    def __init__(
+        self,
+        name: str,
+        stdout: list[str],
+        stderr: list[str],
+        custom_classpath: str | None,
+        case_sensitive: bool,
+        definition_fail_msg: str | None = None,
+    ):
+        self.name = name
+        self.stdout = stdout
+        self.stderr = stderr
+        self.custom_classpath = custom_classpath
+        self.case_sensitive = case_sensitive
+        self.definition_fail_msg = definition_fail_msg
+
+
+class ParseError(Exception):
+    """
+    Exception raised when a test file cannot be parsed correctly.
+    This is used to fail the test in the test runner.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
 
 
 def is_som_test(path):
@@ -33,7 +62,7 @@ def discover_test_files(path, test_files):
             test_files.append(str(element))
 
 
-def collect_tests(test_files):
+def collect_tests(test_files) -> list[Definition]:
     """
     Assemble a dictionary of
     name: the name of the test file
@@ -50,7 +79,7 @@ def collect_tests(test_files):
 
 
 # pylint: disable=too-many-nested-blocks
-def parse_custom_classpath(comment):
+def parse_custom_classpath(comment) -> str | None:
     """
     Based on the comment will calculate the custom_classpath
     for the current test
@@ -81,7 +110,7 @@ def parse_custom_classpath(comment):
                             if tag in os.environ:
                                 classpath_joined += os.environ[tag] + ":"
                                 continue
-                            pytest.fail(f"Environment variable {tag} not set")
+                            raise ParseError(f"Environment variable {tag} not set")
                         # Add a normal classpath inside of tags
                         classpath_joined += tag + ":"
 
@@ -90,7 +119,7 @@ def parse_custom_classpath(comment):
                     if classpath_t in os.environ:
                         classpath_joined += os.environ[classpath_t]
                     else:
-                        pytest.fail(f"Environment variable {classpath_t} not set")
+                        raise ParseError(f"Environment variable {classpath_t} not set")
 
                 # Remove the final ":"
                 classpath = classpath_joined[:-1]
@@ -137,7 +166,7 @@ def parse_stderr(comment):
     return std_err_l
 
 
-def parse_test_file(test_file):
+def parse_test_file(test_file) -> Definition:
     """
     parse the test file to extract the important information
     """
@@ -147,29 +176,32 @@ def parse_test_file(test_file):
     custom_classpath = None
     case_sensitive = False
 
-    with open(test_file, "r", encoding="utf-8") as open_file:
-        contents = open_file.read()
-        comment = contents.split('"')[1]
+    try:
+        with open(test_file, "r", encoding="utf-8") as open_file:
+            contents = open_file.read()
+            comment = contents.split('"')[1]
 
-        # Make sure if using a custom test classpath that it is above
-        # Stdout and Stderr
-        if "custom_classpath" in comment:
-            custom_classpath = parse_custom_classpath(comment)
+            # Make sure if using a custom test classpath that it is above
+            # Stdout and Stderr
+            if "custom_classpath" in comment:
+                custom_classpath = parse_custom_classpath(comment)
 
-        if "case_sensitive" in comment:
-            case_sensitive = parse_case_sensitive(comment)
+            if "case_sensitive" in comment:
+                case_sensitive = parse_case_sensitive(comment)
 
-        if "stdout" in comment:
-            stdout = parse_stdout(comment)
+            if "stdout" in comment:
+                stdout = parse_stdout(comment)
 
-        if "stderr" in comment:
-            stderr = parse_stderr(comment)
+            if "stderr" in comment:
+                stderr = parse_stderr(comment)
 
-        if not case_sensitive:
-            stdout = [s.lower() for s in stdout]
-            stderr = [s.lower() for s in stderr]
+            if not case_sensitive:
+                stdout = [s.lower() for s in stdout]
+                stderr = [s.lower() for s in stderr]
+    except ParseError as e:
+        return Definition(name, [], [], None, False, e.message)
 
-    return name, stdout, stderr, custom_classpath, case_sensitive
+    return Definition(name, stdout, stderr, custom_classpath, case_sensitive)
 
 
 def make_a_diff(expected, given):
@@ -364,16 +396,41 @@ def read_test_exceptions(filename):
 def prepare_tests():
     location = os.path.relpath(os.path.dirname(__file__))
     if not os.path.exists(location + "/Tests"):
-        pytest.fail(
-            "`Tests` directory not found. Please make sure the lang_tests are installed"
-        )
+        return [
+            Definition(
+                "test-setup",
+                [],
+                [],
+                None,
+                False,
+                "`Tests` directory not found. Please make sure the lang_tests are installed",
+            )
+        ]
 
     # Work out settings for the application (They are labelled REQUIRED or OPTIONAL)
     if "CLASSPATH" not in os.environ:  # REQUIRED
-        pytest.fail("Please set the CLASSPATH environment variable")
+        return [
+            Definition(
+                "test-setup",
+                [],
+                [],
+                None,
+                False,
+                "Please set the CLASSPATH environment variable",
+            )
+        ]
 
     if "VM" not in os.environ:  # REQUIRED
-        pytest.fail("Please set the VM environment variable")
+        return [
+            Definition(
+                "test-setup",
+                [],
+                [],
+                None,
+                False,
+                "Please set the VM environment variable",
+            )
+        ]
 
     if "TEST_EXCEPTIONS" in os.environ:  # OPTIONAL
         external_vars.TEST_EXCEPTIONS = os.environ["TEST_EXCEPTIONS"]
@@ -392,30 +449,18 @@ def prepare_tests():
     return collect_tests(test_files)
 
 
-def assign_ids(tests):
-    """
-    Assign test IDs the same way as the names are treated
-    """
-    test_ids = []
-    for test in tests:
-        test_name = test[0]
-        test_t = "Tests/" + test_name.split("Tests/")[-1]
-        test_ids.append(test_t)
-
-    return test_ids
-
-
-# Stops prepare_tests() being called twice
-TEST_FILES = prepare_tests()
+def get_test_id(test):
+    print(test)
+    return "Tests/" + test.name.split("Tests/")[-1]
 
 
 @pytest.mark.parametrize(
-    "name,stdout,stderr,custom_classpath,case_sensitive",
-    TEST_FILES,
-    ids=assign_ids(TEST_FILES),
+    "test",
+    prepare_tests(),
+    ids=get_test_id,
 )
 # pylint: disable=too-many-branches
-def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
+def tests_runner(test):
     """
     Take an array of dictionaries with test file names and expected output
     Run all of the tests and check the output
@@ -423,13 +468,16 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
     """
 
     # Check if a test should not be ran
-    if str(name) in external_vars.do_not_run:
+    if test.name in external_vars.do_not_run:
         pytest.skip("Test included in do_not_run")
 
-    if custom_classpath is not None:
-        command = f"{external_vars.VM} -cp {custom_classpath} {name}"
+    if test.definition_fail_msg:
+        pytest.fail(test.definition_fail_msg)
+
+    if test.custom_classpath is not None:
+        command = f"{external_vars.VM} -cp {test.custom_classpath} {test.name}"
     else:
-        command = f"{external_vars.VM} -cp {external_vars.CLASSPATH} {name}"
+        command = f"{external_vars.VM} -cp {external_vars.CLASSPATH} {test.name}"
 
     try:
         result = subprocess.run(
@@ -442,13 +490,18 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
         )
 
     # lower-case comparisons unless specified otherwise
-    if case_sensitive is False:
+    if test.case_sensitive is False:
         result.stdout = str(result.stdout).lower()
         result.stderr = str(result.stderr).lower()
 
     # Produce potential error messages now and then run assertion
     error_message = build_error_message(
-        result.stdout, result.stderr, stdout, stderr, command, case_sensitive
+        result.stdout,
+        result.stderr,
+        test.stdout,
+        test.stderr,
+        command,
+        test.case_sensitive,
     )
 
     # Related to above line (Rather than change how stdout and stderr are
@@ -457,34 +510,32 @@ def tests_runner(name, stdout, stderr, custom_classpath, case_sensitive):
     if result.returncode != 0:
         error_message += f"Command failed with return code: {result.returncode}\n"
 
-    test_pass_bool = check_output(result, stdout, stderr)
+    test_pass_bool = check_output(result, test.stdout, test.stderr)
 
     # Check if we have any unexpectedly passing tests
     if (
-        name in external_vars.known_failures and test_pass_bool
+        test.name in external_vars.known_failures and test_pass_bool
     ):  # Test passed when it is not expected to
-        external_vars.tests_passed_unexpectedly.append(name)
-        assert False, f"Test {name} is in known_failures but passed"
+        external_vars.tests_passed_unexpectedly.append(test.name)
+        assert False, f"Test {test.name} is in known_failures but passed"
+
+    if test.name in external_vars.failing_as_unspecified and test_pass_bool:
+        # Test passed when it is not expected tp
+        external_vars.tests_passed_unexpectedly.append(test.name)
+        assert False, f"Test {test.name} is in failing_as_unspecified but passed"
+
+    if test.name in external_vars.unsupported and test_pass_bool:
+        # Test passed when it is not expected tp
+        external_vars.tests_passed_unexpectedly.append(test.name)
+        assert False, f"Test {test.name} is in unsupported but passed"
 
     if (
-        str(name) in external_vars.failing_as_unspecified and test_pass_bool
-    ):  # Test passed when it is not expected tp
-        external_vars.tests_passed_unexpectedly.append(name)
-        assert False, f"Test {name} is in failing_as_unspecified but passed"
-
-    if (
-        name in external_vars.unsupported and test_pass_bool
-    ):  # Test passed when it is not expected tp
-        external_vars.tests_passed_unexpectedly.append(name)
-        assert False, f"Test {name} is in unsupported but passed"
-
-    if (
-        name not in external_vars.unsupported
-        and name not in external_vars.known_failures
-        and name not in external_vars.failing_as_unspecified
+        test.name not in external_vars.unsupported
+        and test.name not in external_vars.known_failures
+        and test.name not in external_vars.failing_as_unspecified
     ):
         if not test_pass_bool:
-            external_vars.tests_failed_unexpectedly.append(name)
+            external_vars.tests_failed_unexpectedly.append(test.name)
         assert (
             test_pass_bool
-        ), f"Error on test, {name} expected to pass: {error_message}"
+        ), f"Error on test, {test.name} expected to pass: {error_message}"

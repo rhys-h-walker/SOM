@@ -5,7 +5,6 @@ Tests for the tester functionality itself.
 
 import os
 import pytest
-from _pytest.outcomes import Failed
 
 from test_runner import (
     parse_test_file,
@@ -17,6 +16,7 @@ from test_runner import (
     parse_case_sensitive,
     parse_stdout,
     parse_stderr,
+    ParseError,
 )
 import conftest as external_vars
 
@@ -102,11 +102,11 @@ def test_parse_file(  # pylint: disable=too-many-arguments,too-many-positional-a
     case_sensitive,
     soms_for_testing_location,
 ):
-    result_tuple = parse_test_file(soms_for_testing_location + test_file)
-    assert result_tuple[1] == exp_stdout
-    assert result_tuple[2] == exp_stderr
-    assert result_tuple[3] == custom_classpath
-    assert result_tuple[4] is case_sensitive
+    result = parse_test_file(soms_for_testing_location + test_file)
+    assert result.stdout == exp_stdout
+    assert result.stderr == exp_stderr
+    assert result.custom_classpath == custom_classpath
+    assert result.case_sensitive is case_sensitive
 
 
 @pytest.mark.tester
@@ -116,19 +116,19 @@ def test_parse_file_correctly_using_envvars(soms_for_testing_location):
     os.environ["experimental"] = "experiments/Classpath"
     os.environ["oneWord"] = "anotherOne"
 
-    result_tuple = parse_test_file(soms_for_testing_location + "/som_test_4.som")
-    assert result_tuple[3] == custom_classpath
+    result = parse_test_file(soms_for_testing_location + "/som_test_4.som")
+    assert result.custom_classpath == custom_classpath
 
     # Now test the ability to interleave regular classpaths
     custom_classpath = "one/the/outside:core-lib/AreWeFastYet/Core:then/another/one"
-    result_tuple = parse_test_file(soms_for_testing_location + "/som_test_5.som")
-    assert result_tuple[3] == custom_classpath
+    result = parse_test_file(soms_for_testing_location + "/som_test_5.som")
+    assert result.custom_classpath == custom_classpath
 
 
 @pytest.mark.tester
 def test_parse_file_failing_because_of_envvar_not_being_set(soms_for_testing_location):
-    with pytest.raises(Failed, match=r"Environment variable IDontExist not set"):
-        parse_test_file(soms_for_testing_location + "/som_test_6.som")
+    result = parse_test_file(soms_for_testing_location + "/som_test_6.som")
+    assert result.definition_fail_msg == "Environment variable IDontExist not set"
 
 
 @pytest.mark.tester
@@ -340,13 +340,13 @@ def test_custom_classpath():
     assert expected == parse_custom_classpath(COMMENT_TESTERS)
 
     # Now assert a failure on a classpath envvar that hasnt been set
-    with pytest.raises(Failed, match=r"Environment variable no_exist_1 not set"):
+    with pytest.raises(ParseError, match=r"Environment variable no_exist_1 not set"):
         parse_custom_classpath(COMMENT_TESTERS_2)
 
     os.environ["no_exist_1"] = "exists_1"
 
     # Now assert we fail on the second
-    with pytest.raises(Failed, match=r"Environment variable no_exist_2 not set"):
+    with pytest.raises(ParseError, match=r"Environment variable no_exist_2 not set"):
         parse_custom_classpath(COMMENT_TESTERS_2)
 
     os.environ["no_exist_2"] = "exists_2"
